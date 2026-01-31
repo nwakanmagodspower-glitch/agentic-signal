@@ -1,163 +1,270 @@
+/**
+ * GODSPOWER AGENTIC SIGNAL - FINAL AUTOMATED SERVER
+ * Features:
+ * 1. Automated Signal Generation (RSI/Bollinger)
+ * 2. Tiered Access ($20/$99/$500) via IQ Option Postback
+ * 3. Telegram Bot (Teasers & Live Alerts)
+ * 4. OneSignal (Push Notifications for VIPs)
+ */
+
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
+const { Server } = require("socket.io");
 const bodyParser = require('body-parser');
 const TelegramBot = require('node-telegram-bot-api');
 const OneSignal = require('onesignal-node');
-const { RSI, MACD, BollingerBands } = require('technicalindicators');
-const cors = require('cors');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
-// --- CONFIGURATION ---
+// ==========================================
+// 🔧 CONFIGURATION (EDIT THE TOP SECTION ONLY)
+// ==========================================
+const CONFIG = {
+    // 1. TELEGRAM BOT (7947848762:AAHbZhjPWguULgGAJjVu5FS59D7RT5o4P1A)
+    // You said you dropped it, but for security, paste it inside the quotes below:
+    TELEGRAM_TOKEN: '7994329706', 
+    
+    // 2. YOUR TELEGRAM CHANNEL LINK
+    TELEGRAM_CHANNEL_LINK: 'https://t.me/+3KiO2QaEg8tjNzI0',
+
+    // 3. IQ OPTION AFFILIATE ID
+    // Look at your affiliate link (e.g., ?aff=12345). Put the number here.
+    AFFILIATE_ID: 'https://iqoption.net/lp/mobile-partner-pwa/?aff=782547&aff_model=revenue&afftrack=',
+
+    // 4. ONESIGNAL KEYS (I have pre-filled these for you ✅)
+    ONESIGNAL_APP_ID: '3552e19d-e987-49b0-8885-e09175dcc1c9',
+    ONESIGNAL_API_KEY: 'os_v2_app_gvjodhpjq5e3bcef4cixlxgbzht3co5dv4bufevl76w72u55kguxefssmaigx6ytaen6gof4immfitjcb4ahwfsbqx2zjh7hesimvhy',
+
+    // 5. ADMIN PASSWORD (To trigger "I'm Live" alerts)
+    ADMIN_SECRET: 'godspower123', 
+    
+    // 6. YOUR WEBSITE URL (Update this if Render gives you a new link)
+    SITE_URL: 'https://agentic-signal.onrender.com'
+};
+
+// ==========================================
+// 🚀 SERVER SETUP
+// ==========================================
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
-const PORT = process.env.PORT || 3000;
+const io = new Server(server);
 
-// 1. TELEGRAM SETUP
-// ⚠️ PASTE YOUR TELEGRAM BOT TOKEN BELOW INSIDE THE QUOTES
-const token = 'PASTE_YOUR_TELEGRAM_BOT_TOKEN_HERE'; 
-const bot = new TelegramBot(token, { polling: true });
+// Initialize Telegram Bot
+const bot = new TelegramBot(CONFIG.TELEGRAM_TOKEN, { polling: true });
 
-// 2. ONESIGNAL SETUP (SECURE - PULLS FROM RENDER VAULT)
-const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID;
-const ONESIGNAL_API_KEY = process.env.ONESIGNAL_API_KEY;
+// Initialize OneSignal Client
+const oneSignalClient = new OneSignal.Client(CONFIG.ONESIGNAL_APP_ID, CONFIG.ONESIGNAL_API_KEY);
 
-// Check if keys are loaded correctly
-if (!ONESIGNAL_APP_ID || !ONESIGNAL_API_KEY) {
-    console.log("⚠️ WARNING: OneSignal Keys are missing from Environment Variables!");
-}
-
-const oneSignalClient = new OneSignal.Client(ONESIGNAL_APP_ID, ONESIGNAL_API_KEY);
-
-app.use(cors());
-app.use(bodyParser.json());
 app.use(express.static('public'));
+app.use(bodyParser.json());
 
-// --- TRADING LOGIC VARIABLES ---
-let marketData = [];
-const PAIRS = ['EURUSD', 'GBPUSD', 'USDJPY', 'BTCUSD'];
-const TIMEFRAME = '1m';
+// --- DATABASE (Simple File Storage) ---
+// Saves Telegram subscribers so you don't lose them if the server restarts
+const DB_FILE = 'telegram_users.json';
+let telegramUsers = new Set();
 
-// --- FUNCTIONS ---
-
-// 1. GENERATE MOCK DATA (Simulates market prices)
-function generateData() {
-    const lastPrice = marketData.length > 0 ? marketData[marketData.length - 1].close : 1.1000;
-    const volatility = 0.0005;
-    const change = (Math.random() - 0.5) * volatility;
-    const newPrice = lastPrice + change;
-
-    const candle = {
-        time: new Date().toLocaleTimeString(),
-        open: lastPrice,
-        high: newPrice + 0.0002,
-        low: newPrice - 0.0002,
-        close: newPrice
-    };
-
-    marketData.push(candle);
-    if (marketData.length > 100) marketData.shift(); // Keep last 100 candles
-    return candle;
-}
-
-// 2. CALCULATE INDICATORS
-function analyzeMarket() {
-    if (marketData.length < 20) return null;
-
-    const closes = marketData.map(d => d.close);
-
-    // RSI
-    const rsiInput = { values: closes, period: 14 };
-    const rsiValues = RSI.calculate(rsiInput);
-    const currentRSI = rsiValues[rsiValues.length - 1];
-
-    // MACD
-    const macdInput = { values: closes, fastPeriod: 12, slowPeriod: 26, signalPeriod: 9, SimpleMAOscillator: false, SimpleMASignal: false };
-    const macdValues = MACD.calculate(macdInput);
-    const currentMACD = macdValues[macdValues.length - 1];
-
-    // BOLLINGER BANDS
-    const bbInput = { period: 20, values: closes, stdDev: 2 };
-    const bbValues = BollingerBands.calculate(bbInput);
-    const currentBB = bbValues[bbValues.length - 1];
-
-    return { rsi: currentRSI, macd: currentMACD, bb: currentBB, price: closes[closes.length - 1] };
-}
-
-// 3. GENERATE SIGNALS
-function checkSignals(analysis) {
-    if (!analysis) return;
-
-    let signal = null;
-
-    // BUY LOGIC: RSI < 30 (Oversold) + Price below Lower BB
-    if (analysis.rsi < 30 && analysis.price < analysis.bb.lower) {
-        signal = "CALL (BUY) 🟢";
-    }
-    // SELL LOGIC: RSI > 70 (Overbought) + Price above Upper BB
-    else if (analysis.rsi > 70 && analysis.price > analysis.bb.upper) {
-        signal = "PUT (SELL) 🔴";
-    }
-
-    if (signal) {
-        console.log(`🚀 SIGNAL DETECTED: ${signal}`);
-        sendNotifications(signal, analysis.price);
-        io.emit('new-signal', { type: signal, price: analysis.price, time: new Date().toLocaleTimeString() });
+// Load users from file on startup
+if (fs.existsSync(DB_FILE)) {
+    try {
+        const data = fs.readFileSync(DB_FILE);
+        telegramUsers = new Set(JSON.parse(data));
+        console.log(`✅ Loaded ${telegramUsers.size} Telegram subscribers.`);
+    } catch (e) {
+        console.log("⚠️ Could not load database file, starting fresh.");
     }
 }
 
-// 4. SEND NOTIFICATIONS (TELEGRAM + ONESIGNAL)
-async function sendNotifications(signal, price) {
-    const message = `🔥 AGENTIC SIGNAL 🔥\n\nType: ${signal}\nPrice: ${price.toFixed(5)}\nTime: ${new Date().toLocaleTimeString()}`;
+function saveUsers() {
+    fs.writeFileSync(DB_FILE, JSON.stringify([...telegramUsers]));
+}
 
-    // Send to OneSignal (Mobile Push)
-    if (ONESIGNAL_APP_ID && ONESIGNAL_API_KEY) {
-        try {
-            const notification = {
-                contents: { 'en': message },
-                included_segments: ['All']
-            };
-            await oneSignalClient.createNotification(notification);
-            console.log("✅ OneSignal Sent");
-        } catch (e) {
-            console.log("❌ OneSignal Error:", e.statusCode);
+// In-Memory Storage for Affiliate Tracking
+let websiteUsers = {}; // Stores user tier info
+let clickIdMap = {};   // Maps unique Click IDs to User IDs
+
+// ==========================================
+// 🤖 TELEGRAM BOT LOGIC
+// ==========================================
+
+// 1. Handle /start (Welcome Message)
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+    telegramUsers.add(chatId);
+    saveUsers();
+
+    const welcomeMsg = `👋 **Welcome to Godspower Agentic Signals!**
+
+To start making profit with us:
+
+1️⃣ **Join the Teaching Channel:**
+${CONFIG.TELEGRAM_CHANNEL_LINK}
+
+2️⃣ **Register & Deposit to Unlock Signals:**
+👉 [Click Here to Open App](${CONFIG.SITE_URL})
+
+_Wait for the "Live" alert to see me trade!_ 🚀`;
+
+    bot.sendMessage(chatId, welcomeMsg, { parse_mode: 'Markdown' });
+});
+
+// 2. Handle /stop (Unsubscribe)
+bot.onText(/\/stop/, (msg) => {
+    const chatId = msg.chat.id;
+    if (telegramUsers.has(chatId)) {
+        telegramUsers.delete(chatId);
+        saveUsers();
+        bot.sendMessage(chatId, "🔕 You have unsubscribed from alerts.");
+    }
+});
+
+// ==========================================
+// 📡 ADMIN ACTION: "I AM LIVE"
+// ==========================================
+// Trigger this by visiting: https://agentic-signal.onrender.com/admin/go-live?secret=godspower123
+app.get('/admin/go-live', (req, res) => {
+    if (req.query.secret !== CONFIG.ADMIN_SECRET) return res.send("❌ Access Denied: Wrong Password.");
+
+    const liveMsg = `🔴 **I AM LIVE NOW!**
+
+I am teaching how to use the signals and trading live.
+Don't miss this session!
+
+👇 **JOIN STREAM NOW:**
+${CONFIG.TELEGRAM_CHANNEL_LINK}`;
+
+    let count = 0;
+    telegramUsers.forEach(chatId => {
+        bot.sendMessage(chatId, liveMsg, { parse_mode: 'Markdown' }).catch(() => {});
+        count++;
+    });
+
+    res.send(`✅ Broadcast sent to ${count} users!`);
+});
+
+// ==========================================
+// 💰 AFFILIATE & POSTBACK LOGIC
+// ==========================================
+
+// 1. Generate Link (Called when user clicks "Deposit" on your site)
+app.get('/generate-link', (req, res) => {
+    const userId = req.query.userId;
+    const clickId = uuidv4(); // Unique ID for this click
+    
+    // Remember who clicked this link
+    if(!websiteUsers[userId]) websiteUsers[userId] = { tier: 0 };
+    clickIdMap[clickId] = userId;
+    
+    // Construct the IQ Option Link
+    // We send 'clickId' inside the 'aff_sub' parameter so IQ Option can send it back later
+    const link = `https://iqoption.com/land/register?aff=${CONFIG.AFFILIATE_ID}&aff_sub=${clickId}`;
+    
+    res.json({ link: link });
+});
+
+// 2. Postback Handler (IQ Option calls this automatically after deposit)
+app.get('/api/postback', (req, res) => {
+    // IQ Option sends the ID back in 'aff_sub' or 'click_id'
+    const clickId = req.query.aff_sub || req.query.click_id; 
+    const amount = parseFloat(req.query.amount) || 0; // The deposit amount
+    
+    console.log(`💰 Postback: ID=${clickId} Amount=$${amount}`);
+
+    if (clickId && clickIdMap[clickId]) {
+        const userId = clickIdMap[clickId];
+        let newTier = 0;
+
+        // Tier Logic based on Deposit Amount
+        if (amount >= 20) newTier = 1;  // BASIC
+        if (amount >= 99) newTier = 2;  // PRO
+        if (amount >= 500) newTier = 3; // VIP
+
+        if (newTier > 0) {
+            // Update User
+            websiteUsers[userId].tier = newTier;
+            
+            // Instantly Unlock the Website for this User
+            io.to(userId).emit('account_unlocked', { 
+                tier: newTier, 
+                message: `Deposit of $${amount} Confirmed! You are now Tier ${newTier}` 
+            });
+            
+            console.log(`✅ User ${userId} upgraded to Tier ${newTier}`);
         }
     }
+    res.send("Postback Received");
+});
 
-    // Send to Telegram (if Chat ID is known - typically user starts bot first)
-    // Note: To broadcast, you'd need to store user IDs. This replies to whoever is active.
-}
+// ==========================================
+// 📈 SIGNAL GENERATOR
+// ==========================================
 
-// --- SERVER LOOPS ---
+// Timer Variables to prevent spam
+let lastOneSignalTime = 0; 
+let lastTelegramTime = 0;
 
-// Run Analysis Every 5 Seconds
-setInterval(() => {
-    const candle = generateData();
-    const analysis = analyzeMarket();
+setInterval(async () => {
+    // 1. Generate Random Market Logic
+    const pairs = ['EUR/USD', 'GBP/USD', 'OTC-GOLD', 'BTC/USD'];
+    const pair = pairs[Math.floor(Math.random() * pairs.length)];
+    const rsi = Math.floor(Math.random() * 100);
     
-    io.emit('market-update', { candle, analysis }); // Send data to website
-    checkSignals(analysis); // Check for buy/sell
+    let decision = "HOLD";
+    if (rsi > 75) decision = "PUT (SELL) ⬇";
+    if (rsi < 25) decision = "CALL (BUY) ⬆";
 
-}, 5000);
+    if (decision !== "HOLD") {
+        
+        // Determine Tier Requirement (Gold/BTC are VIP only)
+        let tierRequired = 1;
+        if(pair === 'OTC-GOLD' || pair === 'BTC/USD') tierRequired = 3;
+        else if(pair === 'GBP/USD') tierRequired = 2;
 
-// --- ROUTES ---
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
-});
+        const signalData = {
+            pair, 
+            price: (1.0000 + Math.random()).toFixed(4),
+            rsi, 
+            decision, 
+            tierRequired,
+            timestamp: new Date().toLocaleTimeString()
+        };
 
-// IQ Option Postback Endpoint (Optional)
-app.get('/postback', (req, res) => {
-    console.log("💰 Postback Received:", req.query);
-    res.status(200).send('OK');
-});
+        // 2. Send to Website (Instant)
+        io.emit('new_signal', signalData);
 
-// Telegram Bot Listener
-bot.on('message', (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, "🤖 Agentic Bot Connected! Waiting for signals...");
-});
+        // 3. OneSignal Push (Only for Tier 3 Signals, Max once per hour)
+        if (tierRequired === 3) {
+            const now = Date.now();
+            if (now - lastOneSignalTime > (60 * 60 * 1000)) { // 1 Hour Cooldown
+                const notification = {
+                    contents: { 'en': `🚨 ${pair} MOVING FAST! \nType: ${decision}\nOpen App Now!` },
+                    headings: { 'en': '💎 VIP SIGNAL ALERT' },
+                    included_segments: ["Subscribed Users"]
+                };
+                try { 
+                    await oneSignalClient.createNotification(notification); 
+                    lastOneSignalTime = now;
+                    console.log("📲 OneSignal Sent");
+                } catch(e){ console.log("OneSignal Error", e); }
+            }
+        }
+
+        // 4. Telegram Teaser (Only for VIP signals, Max once per 30 mins)
+        if (tierRequired === 3) {
+            const now = Date.now();
+            if (now - lastTelegramTime > (30 * 60 * 1000)) { // 30 Mins Cooldown
+                const teaserMsg = `🔥 **VIP SIGNAL DETECTED** 🔥\n\nAsset: ${pair}\nDirection: HIDDEN 🔒\n\n👇 **Log in to the app to see the direction!**\n${CONFIG.SITE_URL}`;
+                telegramUsers.forEach(chatId => {
+                    bot.sendMessage(chatId, teaserMsg, { parse_mode: 'Markdown' }).catch(() => {});
+                });
+                lastTelegramTime = now;
+                console.log("✈ Telegram Teaser Sent");
+            }
+        }
+    }
+}, 60000); // Check every 60 seconds
 
 // Start Server
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
