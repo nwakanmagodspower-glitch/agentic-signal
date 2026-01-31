@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GODSPOWER AGENTIC SIGNAL</title>
+    <style>
+        /* AGENTIC THEME: Dark, Futuristic, Mobile-First */
+        body { 
+            font-family: 'Courier New', monospace; 
+            background: #000000; 
+            color: #e0e0e0; 
+            text-align: center; 
+            margin: 0; padding: 15px; 
+        }
+        
+        .container { max-width: 500px; margin: 0 auto; }
+        
+        /* HEADER */
+        .brand { font-size: 20px; font-weight: bold; letter-spacing: 2px; color: #00ff41; text-transform: uppercase; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px;}
+        
+        /* TIER BADGES */
+        .tier-badge { padding: 5px 10px; border: 1px solid #444; font-size: 12px; display: inline-block; margin-bottom: 20px; }
+        .tier-0 { color: #888; border-color: #888; }
+        .tier-3 { background: #00ff41; color: black; font-weight: bold; border: none; box-shadow: 0 0 10px #00ff41; } 
+
+        /* LOCK SCREEN */
+        #lock-screen { background: #0a0a0a; padding: 30px; border: 1px dashed #333; margin-bottom: 30px; border-radius: 8px;}
+        .lock-title { color: #ff0040; font-weight: bold; font-size: 18px; margin-bottom: 15px; }
+        .btn-deposit { 
+            background: #00ce09; color: black; font-weight: bold; padding: 15px; width: 100%; 
+            border: none; cursor: pointer; font-size: 16px; text-transform: uppercase; 
+            border-radius: 5px; margin-top: 15px;
+        }
+
+        /* SIGNAL CARD DESIGN */
+        .signal-card { 
+            background: #0d0d0d; border-left: 4px solid #333; 
+            padding: 15px; margin-bottom: 15px; position: relative; text-align: left;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-radius: 6px;
+        }
+        .signal-card.call { border-left-color: #00ff41; } 
+        .signal-card.put { border-left-color: #ff0040; } 
+
+        .signal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .ai-badge { background:#222; padding:3px 8px; border-radius:4px; font-size:11px; color: #fff; border: 1px solid #444; }
+
+        .signal-decision { font-size: 26px; font-weight: bold; letter-spacing: 1px; margin-bottom: 10px; }
+        .call-text { color: #00ff41; }
+        .put-text { color: #ff0040; }
+
+        .time-row { display:flex; justify-content:space-between; font-size:13px; color:#aaa; margin-bottom:10px; }
+
+        /* MARTINGALE TABLE */
+        .martingale-box {
+            background: #151515; padding: 10px; border-radius: 5px; 
+            font-size: 12px; border: 1px solid #333; margin-bottom: 15px;
+        }
+        .mg-header { color: #888; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 5px; }
+        .mg-row { display: flex; justify-content: space-between; margin-top: 5px; }
+        .mg-time { color: #fff; font-weight: bold; }
+
+        /* ACTION BUTTON */
+        .trade-btn { 
+            display: block; background: #ff7b00; color: #fff; 
+            text-align: center; padding: 12px; text-decoration: none; font-size: 14px; font-weight: bold;
+            border-radius: 5px; transition: 0.2s;
+        }
+        .trade-btn:hover { background: #ff9500; }
+
+        /* BLUR OVERLAY (Locking) */
+        .blur-overlay { 
+            position: absolute; top:0; left:0; width:100%; height:100%; 
+            background: rgba(0,0,0,0.92); z-index: 10; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 6px;
+        }
+    </style>
+    
+    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
+    <script>
+      window.OneSignal = window.OneSignal || [];
+      OneSignal.push(function() { OneSignal.init({ appId: "3552e19d-e987-49b0-8885-e09175dcc1c9" }); });
+    </script>
+</head>
+<body>
+
+<div class="container">
+    <div class="brand">GODSPOWER AGENTIC</div>
+    <div id="my-tier" class="tier-badge tier-0">SYSTEM ACCESS: RESTRICTED</div>
+
+    <div id="lock-screen">
+        <div class="lock-title">⚠ ACCESS DENIED</div>
+        <div style="text-align:left; font-size:13px; color:#aaa; line-height:1.6;">
+            Initialize Deposit to Unlock:<br>
+            • [Tier 1] $20  - Basic Logic<br>
+            • [Tier 2] $99  - Advanced Logic<br>
+            • [Tier 3] $500 - AGENTIC VIP
+        </div>
+        <button class="btn-deposit" onclick="register()">INITIALIZE DEPOSIT</button>
+    </div>
+
+    <div id="feed"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    
+    // User Identity
+    let userId = localStorage.getItem('u_id');
+    if(!userId) {
+        userId = 'agent_' + Math.floor(Math.random() * 99999);
+        localStorage.setItem('u_id', userId);
+    }
+    let currentTier = 0;
+
+    // 1. Register Link
+    async function register() {
+        const res = await fetch(`/generate-link?userId=${userId}`);
+        const data = await res.json();
+        window.open(data.link, '_blank');
+    }
+
+    // 2. Tier Update
+    socket.on('tier_update', (data) => {
+        currentTier = data.tier;
+        const badge = document.getElementById('my-tier');
+        badge.innerText = `SYSTEM ACCESS: TIER ${currentTier}`;
+        badge.className = `tier-badge tier-${currentTier}`;
+        document.getElementById('lock-screen').style.display = 'none';
+        alert("ACCESS GRANTED. AGENTIC MODE ACTIVE.");
+    });
+
+    // 3. New Signal
+    socket.on('new_signal', (data) => {
+        const feed = document.getElementById('feed');
+        const div = document.createElement('div');
+        const isCall = data.decision.includes('HIGHER');
+        div.className = `signal-card ${isCall ? 'call' : 'put'}`;
+        
+        const isLocked = data.tierRequired > currentTier;
+        const tradeLink = `https://iqoption.net/lp/mobile-partner-pwa/?aff=782547&aff_model=revenue`;
+
+        div.innerHTML = `
+            ${isLocked ? `
+                <div class="blur-overlay">
+                    <div style="font-size:24px;">🔒</div>
+                    <div style="color:#ff0040; font-weight:bold; margin-top:10px;">VIP TIER ${data.tierRequired}</div>
+                    <small style="color:#888;">Unlock to see Martingale Levels</small>
+                </div>` : ''}
+            
+            <div class="signal-header">
+                <span style="font-weight:bold;">${data.pair}</span>
+                <span class="ai-badge">🤖 ${data.confidence}% AI</span>
+            </div>
+            
+            <div class="signal-decision ${isCall ? 'call-text' : 'put-text'}">
+                ${data.decision}
+            </div>
+
+            <div class="time-row">
+                <span>🕓 Entry: ${data.entryTime}</span>
+                <span>⏳ Exp: 2-min</span>
+            </div>
+            
+            <div class="martingale-box">
+                <div class="mg-header">📊 MARTINGALE LEVELS</div>
+                <div class="mg-row"><span>Level 1</span> <span class="mg-time">${data.martingale[0]}</span></div>
+                <div class="mg-row"><span>Level 2</span> <span class="mg-time">${data.martingale[1]}</span></div>
+                <div class="mg-row"><span>Level 3</span> <span class="mg-time">${data.martingale[2]}</span></div>
+            </div>
+
+            <a href="${tradeLink}" target="_blank" class="trade-btn">⚡ EXECUTE ON APP</a>
+        `;
+        
+        feed.prepend(div);
+        if(feed.children.length > 5) feed.lastChild.remove();
+    });
+</script>
+</body>
+</html>
