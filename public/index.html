@@ -6,187 +6,97 @@
     <title>AGENTIC AI // BINARY SIGNALS</title>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #00ff41; --glow: rgba(0, 255, 65, 0.5); --dark: #050505; --red: #ff003c; --gold: #ffd700; --panel: rgba(20, 25, 30, 0.95); }
+        :root { --primary: #00ff41; --glow: rgba(0, 255, 65, 0.5); --dark: #050505; --red: #ff003c; --panel: #111; }
         
         body { 
             margin: 0; background: #000; color: #fff; font-family: 'Rajdhani', sans-serif; 
-            min-height: 100vh; overflow-x: hidden;
-            display: flex; flex-direction: column; align-items: center;
-            -webkit-tap-highlight-color: transparent;
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+            overflow-x: hidden; width: 100%; -webkit-tap-highlight-color: transparent;
         }
 
-        /* ANIMATED BACKGROUND */
-        .video-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; opacity: 0.3; filter: blur(5px); z-index: -1;
-        }
-
-        /* --- MOBILE CENTERED UI --- */
-        #lock-screen {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; width: 100%;
-            padding: 15px; box-sizing: border-box;
-        }
-
-        .glass-panel {
-            background: rgba(10, 15, 10, 0.9); backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 255, 65, 0.3); box-shadow: 0 0 40px var(--glow);
-            padding: 20px; width: 100%; max-width: 420px; border-radius: 16px; text-align: center;
-        }
-
-        .status-dot { height: 10px; width: 10px; background: var(--primary); border-radius: 50%; display: inline-block; box-shadow: 0 0 10px var(--primary); animation: pulse 1s infinite; }
-        h1 { font-family: 'Share Tech Mono', monospace; font-size: 2.2rem; margin: 10px 0 5px 0; text-shadow: 0 0 20px var(--primary); line-height: 1; }
-        .subtitle { font-size: 0.9rem; color: #aaa; margin-bottom: 15px; letter-spacing: 1px; }
-
-        /* PRICING GRID */
+        /* FULL WIDTH MOBILE FIXES */
+        #lock-screen, #dashboard { width: 100%; max-width: 600px; box-sizing: border-box; padding: 15px; }
+        .glass-panel { width: 100%; background: rgba(10, 15, 10, 0.95); border: 1px solid rgba(0, 255, 65, 0.3); padding: 20px; border-radius: 16px; text-align: center; box-sizing: border-box; }
+        
+        .video-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.3; filter: blur(5px); z-index: -1; }
+        h1 { font-family: 'Share Tech Mono'; font-size: 2rem; margin: 10px 0; color: #fff; text-shadow: 0 0 10px var(--primary); }
+        
+        /* PRICING */
         .pricing-grid { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; }
-        .price-card { 
-            background: rgba(255,255,255,0.03); border: 1px solid #333; 
-            padding: 12px 15px; border-radius: 8px; text-align: left;
-            transition: 0.2s; position: relative; overflow: hidden;
-        }
-        .price-card.vip { 
-            border: 1px solid var(--primary); background: rgba(0, 255, 65, 0.08); 
-            box-shadow: 0 0 20px rgba(0,255,65,0.15); 
-        }
-        .tier-name { font-family: 'Share Tech Mono'; color: #fff; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center; }
-        .tier-price { color: var(--primary); font-weight: 800; font-size: 1.1rem; }
-        .tier-benefits { font-size: 0.9rem; color: #ccc; margin-top: 8px; line-height: 1.5; }
-        .check { color: var(--primary); margin-right: 6px; font-weight: bold; }
-        .cross { color: var(--red); margin-right: 6px; font-weight: bold; opacity: 0.7; }
-
-        /* BUTTONS */
-        .btn-main {
-            background: linear-gradient(180deg, #00ff41, #008f11); color: #000; border: none;
-            padding: 18px; width: 100%; font-size: 1.2rem; font-weight: 900; text-transform: uppercase;
-            border-radius: 8px; box-shadow: 0 0 25px var(--glow); cursor: pointer; transition: 0.2s;
-            margin-top: 15px; letter-spacing: 1px; animation: bounce 2s infinite;
-        }
-        .btn-main:active { transform: scale(0.96); }
-        .btn-alert {
-            background: transparent; border: 1px solid #333; color: #fff;
-            padding: 12px; width: 100%; font-size: 0.8rem; margin-top: 10px;
-            border-radius: 6px; cursor: pointer; opacity: 0.7;
-        }
-
-        /* --- DASHBOARD --- */
-        #dashboard { display: none; width: 100%; max-width: 600px; padding: 10px; box-sizing: border-box; }
+        .price-card { background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 15px; border-radius: 8px; text-align: left; }
+        .price-card.vip { border: 1px solid var(--primary); background: rgba(0,255,65,0.05); }
+        .check { color: var(--primary); margin-right: 5px; }
         
-        .dash-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            background: var(--panel); padding: 15px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .tier-badge { padding: 5px 12px; border-radius: 4px; font-family: 'Share Tech Mono'; font-weight: bold; font-size: 11px; background: #333; border: 1px solid #555; letter-spacing: 1px; }
-        .tier-3 { background: var(--primary); color: #000; box-shadow: 0 0 10px var(--glow); border: none; }
-
-        /* --- REDESIGNED PROFESSIONAL SIGNALS --- */
+        .btn-main { background: var(--primary); color: #000; padding: 15px; width: 100%; font-weight: 900; font-size: 1.2rem; border: none; border-radius: 8px; margin-top: 15px; cursor: pointer; animation: pulse 2s infinite; text-transform: uppercase; }
+        
+        /* PROFESSIONAL SIGNAL CARD DESIGN */
         .signal-card { 
-            background: var(--panel); border: 1px solid #333;
-            border-top: 2px solid #555;
-            padding: 0; margin-bottom: 15px; border-radius: 12px; position: relative; overflow: hidden;
-            animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: #141414; border: 1px solid #333; border-top: 3px solid #555;
+            margin-bottom: 15px; border-radius: 12px; overflow: hidden; position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%;
         }
-        
-        /* Dynamic Header Colors */
         .signal-card.call { border-top-color: var(--primary); }
         .signal-card.put { border-top-color: var(--red); }
 
-        .sig-top {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 15px; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .asset-name { font-family: 'Share Tech Mono'; font-size: 1.1rem; color: #fff; letter-spacing: 1px; }
-        .sig-time { font-size: 0.8rem; color: #666; font-family: monospace; }
-
-        .sig-body {
-            padding: 15px; display: flex; justify-content: space-between; align-items: center;
-        }
+        .sig-top { display: flex; justify-content: space-between; padding: 12px 15px; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Share Tech Mono'; font-size: 0.9rem; color: #ccc; }
         
-        /* The Big Badge */
-        .direction-badge {
-            font-size: 1.4rem; font-weight: 900; padding: 5px 15px; border-radius: 6px;
-            text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;
-        }
-        .call .direction-badge { color: var(--primary); background: rgba(0, 255, 65, 0.1); border: 1px solid rgba(0, 255, 65, 0.2); }
-        .put .direction-badge { color: var(--red); background: rgba(255, 0, 60, 0.1); border: 1px solid rgba(255, 0, 60, 0.2); }
+        .sig-body { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* BADGES */
+        .direction-badge { font-size: 1.4rem; font-weight: 900; padding: 5px 12px; border-radius: 6px; display: flex; align-items: center; gap: 5px; }
+        .call .direction-badge { color: var(--primary); background: rgba(0,255,65,0.1); border: 1px solid rgba(0,255,65,0.2); }
+        .put .direction-badge { color: var(--red); background: rgba(255,0,60,0.1); border: 1px solid rgba(255,0,60,0.2); }
 
-        .sig-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;
-            margin-top: 5px; border-top: 1px solid rgba(255,255,255,0.05); padding: 10px 15px;
-        }
+        /* DATA GRID */
+        .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 15px 15px 15px; }
         .data-point { display: flex; flex-direction: column; }
-        .dp-label { font-size: 0.7rem; color: #777; text-transform: uppercase; }
-        .dp-val { font-family: 'Share Tech Mono'; font-size: 1rem; color: #ddd; }
+        .dp-label { font-size: 0.7rem; color: #666; }
+        .dp-val { font-family: 'Share Tech Mono'; font-size: 1rem; color: #fff; }
 
-        /* PRO TRADE BUTTON */
+        /* TRADE BUTTON */
         .btn-trade-area { padding: 0 15px 15px 15px; }
-        .btn-trade {
-            width: 100%; padding: 14px; border: none; border-radius: 8px;
-            font-family: 'Rajdhani', sans-serif; font-weight: 800; font-size: 1rem;
-            text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
-            display: flex; justify-content: center; align-items: center; gap: 8px;
-            transition: 0.2s;
-        }
-        .call .btn-trade { background: var(--primary); color: #000; box-shadow: 0 0 20px rgba(0,255,65,0.3); }
-        .put .btn-trade { background: var(--red); color: #fff; box-shadow: 0 0 20px rgba(255,0,60,0.3); }
-        .btn-trade:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-trade { width: 100%; padding: 12px; font-weight: 800; border: none; border-radius: 6px; cursor: pointer; text-transform: uppercase; font-size: 1rem; }
+        .call .btn-trade { background: var(--primary); color: #000; box-shadow: 0 0 15px rgba(0,255,65,0.2); } 
+        .put .btn-trade { background: var(--red); color: #fff; box-shadow: 0 0 15px rgba(255,0,60,0.2); }
 
-        /* LOCK OVERLAY */
-        .blur-overlay { 
-            position: absolute; top:0; left:0; width:100%; height:100%; 
-            background: rgba(5, 5, 10, 0.95); backdrop-filter: blur(10px);
-            display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 10; 
-            text-align: center; border: 1px solid #333;
-        }
-        .lock-icon { font-size: 2rem; margin-bottom: 10px; opacity: 0.8; }
+        /* LOCK */
+        .blur-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(10,10,10,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; backdrop-filter: blur(5px); text-align: center; }
 
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; transform: scale(1.01); } 100% { opacity: 0.8; } }
     </style>
-    
     <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
-    <script>
-      window.OneSignal = window.OneSignal || [];
-      OneSignal.push(function() {
-        OneSignal.init({ 
-            appId: "3552e19d-e987-49b0-8885-e09175dcc1c9",
-            notifyButton: { enable: false }, 
-        });
-      });
-    </script>
+    <script> window.OneSignal = window.OneSignal || []; OneSignal.push(function() { OneSignal.init({ appId: "3552e19d-e987-49b0-8885-e09175dcc1c9", notifyButton: { enable: false } }); }); </script>
 </head>
 <body>
-
-    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnJ2ZmV3bnZ5cWJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L1R1TVThqcebPqF8M/giphy.gif" class="video-bg" alt="bg">
+    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnJ2ZmV3bnZ5cWJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L1R1TVThqcebPqF8M/giphy.gif" class="video-bg">
 
     <div id="lock-screen">
         <div class="glass-panel">
-            <div><span class="status-dot"></span> BINARY SYSTEM ONLINE</div>
+            <div><span style="color:var(--primary)">●</span> SYSTEM ONLINE</div>
             <h1>AGENTIC AI</h1>
-            <div class="subtitle">HIGH-FREQUENCY TRADING SIGNALS</div>
-            
             <div class="pricing-grid">
-                <div class="price-card"><div class="tier-name">BASIC <span class="tier-price">$25 - $99</span></div><div class="tier-benefits"><span class="check">✓</span> <b>85% Win Rate</b><br><span class="check">✓</span> 10-15 Daily Signals<br><span class="cross">✗</span> No OTC / Weekend Signals</div></div>
-                <div class="price-card"><div class="tier-name">PRO <span class="tier-price">$100 - $499</span></div><div class="tier-benefits"><span class="check">✓</span> <b>92% Win Rate</b> (Recommended)<br><span class="check">✓</span> <b>30+ Daily Signals</b><br><span class="check">✓</span> OTC & Turbo Mode Access</div></div>
-                <div class="price-card vip"><div class="tier-name">VIP <span class="tier-price">$500+</span></div><div class="tier-benefits"><span class="check">✓</span> <b>98% AI ACCURACY</b><br><span class="check">✓</span> <b>UNLIMITED SIGNALS (24/7)</b><br><span class="check">✓</span> Zero Latency + Priority Push</div></div>
+                <div class="price-card"><b style="color:#fff">BASIC ($25-$99)</b><br><small style="color:#aaa">No OTC / Weekend Signals</small></div>
+                <div class="price-card vip">
+                    <div style="display:flex; justify-content:space-between;"><b style="color:#00ff41">VIP ($500+)</b> <span>RECOMMENDED</span></div>
+                    <div style="margin-top:5px; font-size:0.9rem; color:#ddd;">
+                        <span class="check">✓</span> 98% AI Accuracy<br>
+                        <span class="check">✓</span> Instant Zero-Latency<br>
+                        <span class="check">✓</span> 24/7 OTC Access
+                    </div>
+                </div>
             </div>
-
-            <button class="btn-main" onclick="register()">⚡ START MAKING PROFIT</button>
-            <button class="btn-alert" onclick="enableAlerts()">🔔 ENABLE NOTIFICATIONS</button>
-            <p style="font-size:10px; color:#555; margin-top:5px;">iPhone Users: Tap 'AA' > Open in Browser</p>
+            <button class="btn-main" onclick="register()">⚡ DEPOSIT TO UNLOCK</button>
+            <button onclick="OneSignal.push(()=>OneSignal.showNativePrompt())" style="background:none; border:none; color:#aaa; margin-top:10px; font-size:0.8rem; cursor:pointer;">🔔 Enable Alerts</button>
         </div>
     </div>
 
-    <div id="dashboard">
-        <div class="dash-header">
+    <div id="dashboard" style="display:none;">
+        <div style="background:#111; padding:15px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border:1px solid #333; box-shadow:0 5px 15px rgba(0,0,0,0.5);">
             <div style="display:flex; align-items:center; gap:10px;">
-                <span style="height:8px; width:8px; background:red; border-radius:50%; box-shadow:0 0 10px red; animation:pulse 1s infinite;"></span>
-                <span style="font-weight:bold; color:#fff; font-size:1.1rem;">LIVE FEED</span>
+                <span style="width:8px; height:8px; background:red; border-radius:50%; animation:pulse 1s infinite;"></span>
+                <b>LIVE FEED</b>
             </div>
-            <div id="my-tier" class="tier-badge tier-1">LOCKED</div>
+            <span id="my-tier" style="background:#333; padding:4px 10px; font-size:0.8rem; border-radius:4px;">LOCKED</span>
         </div>
         <div id="feed"></div>
     </div>
@@ -194,108 +104,64 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let userId = localStorage.getItem('u_id');
-        if(!userId) {
-            userId = 'user_' + Math.floor(Math.random() * 1000000);
-            localStorage.setItem('u_id', userId);
-        }
+        let userId = localStorage.getItem('u_id') || 'user_' + Math.floor(Math.random() * 1000000);
+        localStorage.setItem('u_id', userId);
+        let currentTier = 0;
 
-        let currentTier = 0; 
+        // Admin Backdoor
+        if (new URLSearchParams(window.location.search).get('admin') === 'true') setTimeout(()=>updateTier(3, "ADMIN MODE"), 500);
 
-        // ADMIN BACKDOOR (?admin=true)
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('admin') === 'true') {
-            setTimeout(() => { updateTier(3, "ADMIN ACCESS GRANTED 🔴"); }, 500);
-        }
-        
         async function register() {
-            const btn = document.querySelector('.btn-main');
-            try {
-                const res = await fetch(`/generate-link?userId=${userId}`);
-                const data = await res.json();
-                window.open(data.link, '_blank');
-            } catch(e) { alert("Error connecting to server."); }
+            try { window.open((await (await fetch(`/generate-link?userId=${userId}`)).json()).link, '_blank'); } catch(e){}
         }
 
-        function enableAlerts() {
-            OneSignal.push(function() { OneSignal.showNativePrompt(); });
-            alert("Checking permission...");
-        }
-
-        socket.on('account_unlocked', (data) => { updateTier(data.tier, data.message); });
+        socket.on('account_unlocked', (data) => updateTier(data.tier, data.message));
         
         function updateTier(tier, msg) {
             currentTier = tier;
             document.getElementById('lock-screen').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
-            const badge = document.getElementById('my-tier');
-            badge.innerText = tier === 3 ? "VIP TRADER" : (tier === 2 ? "PRO TRADER" : "BASIC");
-            badge.className = "tier-badge tier-" + currentTier;
+            document.getElementById('my-tier').innerText = tier === 3 ? "VIP TRADER" : "BASIC";
             alert("🚀 " + msg);
         }
 
-        // --- NEW PROFESSIONAL SIGNAL RENDERER ---
-        socket.on('new_signal', (data) => {
+        function renderSignal(data) {
             const feed = document.getElementById('feed');
             const div = document.createElement('div');
-            
             const isCall = data.decision.includes('CALL') || data.decision.includes('Buy');
             const isLocked = data.tierRequired > currentTier;
-            const depositAmount = data.tierRequired === 3 ? '500' : '100';
-
-            div.className = `signal-card ${isCall ? 'call' : 'put'}`;
             
-            // Extract pure text for direction
-            const dirText = isCall ? "CALL ↗" : "PUT ↘";
-            const btnText = isCall ? "BUY NOW ↗" : "SELL NOW ↘";
-
+            div.className = `signal-card ${isCall ? 'call' : 'put'}`;
             div.innerHTML = `
                 ${isLocked ? `
                 <div class="blur-overlay">
-                    <div class="lock-icon">🔒</div>
-                    <span style="font-size:1.1rem; font-weight:900; color:#fff; letter-spacing:1px;">VIP SIGNAL DETECTED</span>
-                    <small style="color:#aaa; margin-top:5px; font-family:'Share Tech Mono'">AI Confidence: 98.5%</small>
-                    <button onclick="register()" style="background:#00ff41; border:none; padding:8px 20px; border-radius:4px; font-weight:bold; margin-top:15px; cursor:pointer;">
-                        DEPOSIT $${depositAmount} TO UNLOCK
-                    </button>
+                    <div style="font-size:2rem;">🔒</div>
+                    <h3>VIP SIGNAL</h3>
+                    <small style="color:#aaa">98% Accuracy Hidden</small>
+                    <button onclick="register()" style="background:#00ff41; border:none; padding:10px 20px; font-weight:bold; margin-top:10px; border-radius:4px;">DEPOSIT $500</button>
                 </div>` : ''}
                 
-                <div class="sig-top">
-                    <span class="asset-name">Running: ${data.pair}</span>
-                    <span class="sig-time">${data.timestamp}</span>
-                </div>
-
+                <div class="sig-top"><span>${data.pair}</span><span>${data.timestamp}</span></div>
+                
                 <div class="sig-body">
-                    <div class="direction-badge">
-                        ${dirText}
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-size:0.7rem; color:#888;">AI CONFIDENCE</div>
-                        <div style="font-size:1.1rem; font-weight:bold; color:#fff;">${data.tierRequired === 3 ? '99.1%' : '92.4%'}</div>
-                    </div>
+                    <div class="direction-badge">${isCall ? 'CALL ↗' : 'PUT ↘'}</div>
+                    <div style="text-align:right"><span class="dp-label">AI CONF</span><br><b>${data.tierRequired === 3 ? '98.5%' : '92%'}</b></div>
                 </div>
 
                 <div class="sig-grid">
-                    <div class="data-point">
-                        <span class="dp-label">STRIKE ENTRY</span>
-                        <span class="dp-val">${data.price}</span>
-                    </div>
-                    <div class="data-point" style="align-items:flex-end;">
-                        <span class="dp-label">EXPIRY</span>
-                        <span class="dp-val">M1 / TURBO</span>
-                    </div>
+                    <div class="data-point"><span class="dp-label">STRIKE</span><span class="dp-val">${data.price}</span></div>
+                    <div class="data-point" style="align-items:flex-end"><span class="dp-label">EXPIRY</span><span class="dp-val">M1 / TURBO</span></div>
                 </div>
-                
-                ${!isLocked ? `
-                <div class="btn-trade-area">
-                    <button class="btn-trade" onclick="register()">
-                        ${btnText}
-                    </button>
-                </div>` : ''}
+
+                ${!isLocked ? `<div class="btn-trade-area"><button class="btn-trade" onclick="register()">⚡ PLACE TRADE</button></div>` : ''}
             `;
-            
             feed.prepend(div);
-            if(feed.children.length > 8) feed.lastChild.remove();
+            if(feed.children.length > 10) feed.lastChild.remove();
+        }
+
+        socket.on('new_signal', (data) => renderSignal(data));
+        socket.on('signal_history', (history) => {
+            history.slice().reverse().forEach(data => renderSignal(data));
         });
     </script>
 </body>
