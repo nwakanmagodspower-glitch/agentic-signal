@@ -1,445 +1,270 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AGENTIC AI // LIVE SIGNALS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <style>
-        :root { --primary: #00ff41; --glow: rgba(0, 255, 65, 0.5); --dark: #050505; --red: #ff003c; }
-        
-        body { 
-            margin: 0; background: #000; color: #fff; font-family: 'Rajdhani', sans-serif; 
-            min-height: 100vh; overflow-x: hidden;
-            display: flex; flex-direction: column; align-items: center;
-        }
+/**
+ * GODSPOWER AGENTIC SIGNAL - FINAL AUTOMATED SERVER
+ * Features:
+ * 1. Automated Signal Generation (RSI/Bollinger)
+ * 2. Tiered Access ($25/$99/$500) via IQ Option Postback
+ * 3. Telegram Bot (Teasers & Live Alerts)
+ * 4. OneSignal (Push Notifications for VIPs)
+ */
 
-        /* ANIMATED BACKGROUND */
-        .video-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; opacity: 0.3; filter: blur(5px); z-index: -1;
-        }
+const express = require('express');
+const http = require('http');
+const { Server } = require("socket.io");
+const bodyParser = require('body-parser');
+const TelegramBot = require('node-telegram-bot-api');
+const OneSignal = require('onesignal-node');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
-        /* --- LOCK SCREEN (The Cyber Glass UI) --- */
-        #lock-screen {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; width: 100%;
-            transition: opacity 0.5s ease;
-        }
-
-        .glass-panel {
-            background: rgba(10, 15, 10, 0.75); backdrop-filter: blur(15px);
-            border: 1px solid rgba(0, 255, 65, 0.3); box-shadow: 0 0 40px var(--glow);
-            padding: 40px; width: 90%; max-width: 450px; border-radius: 12px; text-align: center;
-        }
-
-        .status-dot { height: 10px; width: 10px; background: var(--primary); border-radius: 50%; display: inline-block; box-shadow: 0 0 10px var(--primary); animation: pulse 1s infinite; }
-        h1 { font-family: 'Share Tech Mono', monospace; font-size: 2.5rem; margin: 10px 0; text-shadow: 0 0 20px var(--primary); line-height: 1; }
-        
-        /* PRICING GRID */
-        .pricing-grid { display: flex; gap: 10px; margin-bottom: 30px; margin-top: 20px;}
-        .price-card { 
-            background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 10px; flex: 1; border-radius: 5px; 
-        }
-        .price-title { font-size: 0.8rem; color: #888; display: block; }
-        .price-amount { font-size: 1.2rem; font-weight: 800; color: #fff; display: block; }
-
-        /* DEPOSIT BUTTON */
-        .btn-main {
-            background: linear-gradient(180deg, #00ff41, #008f11); color: #000; border: none;
-            padding: 15px; width: 100%; font-size: 1.2rem; font-weight: 800; text-transform: uppercase;
-            border-radius: 6px; box-shadow: 0 0 25px var(--glow); cursor: pointer; transition: 0.3s;
-        }
-        .btn-main:hover { transform: scale(1.02); box-shadow: 0 0 50px var(--primary); }
-
-        /* --- DASHBOARD (Hidden initially) --- */
-        #dashboard { display: none; width: 100%; max-width: 600px; padding: 20px; box-sizing: border-box; }
-        
-        .dash-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px;
-        }
-        .tier-badge { padding: 5px 15px; border-radius: 20px; font-family: 'Share Tech Mono'; font-weight: bold; font-size: 14px; background: #333; border: 1px solid #555; }
-        .tier-1 { color: #fff; } 
-        .tier-2 { color: #ffd700; border-color: #ffd700; } 
-        .tier-3 { background: var(--primary); color: #000; box-shadow: 0 0 10px var(--primary); }
-
-        /* SIGNAL CARDS */
-        .signal-card { 
-            background: rgba(20, 20, 20, 0.9); border-left: 5px solid #555; 
-            padding: 20px; margin-bottom: 15px; border-radius: 8px; position: relative; overflow: hidden;
-            animation: slideIn 0.5s ease;
-        }
-        .signal-card.call { border-left-color: var(--primary); }
-        .signal-card.put { border-left-color: var(--red); }
-        
-        .signal-header { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; }
-        .decision { font-size: 2rem; font-weight: 800; margin: 10px 0; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        .call .decision { color: var(--primary); }
-        .put .decision { color: var(--red); }
-
-        /* BLUR OVERLAY FOR LOCKED TIERS */
-        .blur-overlay { 
-            position: absolute; top:0; left:0; width:100%; height:100%; 
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-            display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 10; 
-        }
-
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    </style>
+// ==========================================
+// 🔧 CONFIGURATION (EDIT THE TOP SECTION ONLY)
+// ==========================================
+const CONFIG = {
+    // 1. TELEGRAM BOT (7947848762:AAHbZhjPWguULgGAJjVu5FS59D7RT5o4P1A)
+    TELEGRAM_TOKEN: '7994329706', 
     
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
-    <script>
-      window.OneSignal = window.OneSignal || [];
-      OneSignal.push(function() {
-        OneSignal.init({ appId: "<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AGENTIC AI // LIVE SIGNALS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <style>
-        :root { --primary: #00ff41; --glow: rgba(0, 255, 65, 0.5); --dark: #050505; --red: #ff003c; }
-        
-        body { 
-            margin: 0; background: #000; color: #fff; font-family: 'Rajdhani', sans-serif; 
-            min-height: 100vh; overflow-x: hidden;
-            display: flex; flex-direction: column; align-items: center;
-        }
+    // 2. YOUR TELEGRAM CHANNEL LINK
+    TELEGRAM_CHANNEL_LINK: 'https://t.me/+3KiO2QaEg8tjNzI0',
 
-        /* ANIMATED BACKGROUND */
-        .video-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; opacity: 0.3; filter: blur(5px); z-index: -1;
-        }
+    // 3. IQ OPTION AFFILIATE ID
+    // Look at your affiliate link (e.g., ?aff=12345). Put the number here.
+    AFFILIATE_ID: 'https://iqoption.net/lp/mobile-partner-pwa/?aff=782547&aff_model=revenue&afftrack=',
 
-        /* --- LOCK SCREEN (The Cyber Glass UI) --- */
-        #lock-screen {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; width: 100%;
-            transition: opacity 0.5s ease;
-        }
+    // 4. ONESIGNAL KEYS (I have pre-filled these for you ✅)
+    ONESIGNAL_APP_ID: '3552e19d-e987-49b0-8885-e09175dcc1c9',
+    ONESIGNAL_API_KEY: 'os_v2_app_gvjodhpjq5e3bcef4cixlxgbzht3co5dv4bufevl76w72u55kguxefssmaigx6ytaen6gof4immfitjcb4ahwfsbqx2zjh7hesimvhy',
 
-        .glass-panel {
-            background: rgba(10, 15, 10, 0.75); backdrop-filter: blur(15px);
-            border: 1px solid rgba(0, 255, 65, 0.3); box-shadow: 0 0 40px var(--glow);
-            padding: 40px; width: 90%; max-width: 450px; border-radius: 12px; text-align: center;
-        }
-
-        .status-dot { height: 10px; width: 10px; background: var(--primary); border-radius: 50%; display: inline-block; box-shadow: 0 0 10px var(--primary); animation: pulse 1s infinite; }
-        h1 { font-family: 'Share Tech Mono', monospace; font-size: 2.5rem; margin: 10px 0; text-shadow: 0 0 20px var(--primary); line-height: 1; }
-        
-        /* PRICING GRID */
-        .pricing-grid { display: flex; gap: 10px; margin-bottom: 30px; margin-top: 20px;}
-        .price-card { 
-            background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 10px; flex: 1; border-radius: 5px; 
-        }
-        .price-title { font-size: 0.8rem; color: #888; display: block; }
-        .price-amount { font-size: 1.2rem; font-weight: 800; color: #fff; display: block; }
-
-        /* DEPOSIT BUTTON */
-        .btn-main {
-            background: linear-gradient(180deg, #00ff41, #008f11); color: #000; border: none;
-            padding: 15px; width: 100%; font-size: 1.2rem; font-weight: 800; text-transform: uppercase;
-            border-radius: 6px; box-shadow: 0 0 25px var(--glow); cursor: pointer; transition: 0.3s;
-        }
-        .btn-main:hover { transform: scale(1.02); box-shadow: 0 0 50px var(--primary); }
-
-        /* --- DASHBOARD (Hidden initially) --- */
-        #dashboard { display: none; width: 100%; max-width: 600px; padding: 20px; box-sizing: border-box; }
-        
-        .dash-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px;
-        }
-        .tier-badge { padding: 5px 15px; border-radius: 20px; font-family: 'Share Tech Mono'; font-weight: bold; font-size: 14px; background: #333; border: 1px solid #555; }
-        .tier-1 { color: #fff; } 
-        .tier-2 { color: #ffd700; border-color: #ffd700; } 
-        .tier-3 { background: var(--primary); color: #000; box-shadow: 0 0 10px var(--primary); }
-
-        /* SIGNAL CARDS */
-        .signal-card { 
-            background: rgba(20, 20, 20, 0.9); border-left: 5px solid #555; 
-            padding: 20px; margin-bottom: 15px; border-radius: 8px; position: relative; overflow: hidden;
-            animation: slideIn 0.5s ease;
-        }
-        .signal-card.call { border-left-color: var(--primary); }
-        .signal-card.put { border-left-color: var(--red); }
-        
-        .signal-header { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; }
-        .decision { font-size: 2rem; font-weight: 800; margin: 10px 0; text-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        .call .decision { color: var(--primary); }
-        .put .decision { color: var(--red); }
-
-        /* BLUR OVERLAY FOR LOCKED TIERS */
-        .blur-overlay { 
-            position: absolute; top:0; left:0; width:100%; height:100%; 
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-            display: flex; align-items: center; justify-content: center; flex-direction: column; z-index: 10; 
-        }
-
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    </style>
+    // 5. ADMIN PASSWORD (To trigger "I'm Live" alerts)
+    ADMIN_SECRET: 'godspower123', 
     
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
-    <script>
-      window.OneSignal = window.OneSignal || [];
-      OneSignal.push(function() {
-        OneSignal.init({ appId: "YOUR_ONESIGNAL_APP_ID" }); // REPLACE THIS
-      });
-    </script>
-</head>
-<body>
+    // 6. YOUR WEBSITE URL (Update this if Render gives you a new link)
+    SITE_URL: 'https://agentic-signal.onrender.com'
+};
 
-    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnJ2ZmV3bnZ5cWJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L1R1TVThqcebPqF8M/giphy.gif" class="video-bg" alt="bg">
+// ==========================================
+// 🚀 SERVER SETUP
+// ==========================================
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-    <div id="lock-screen">
-        <div class="glass-panel">
-            <div><span class="status-dot"></span> SYSTEM ONLINE</div>
-            <h1>AGENTIC AI</h1>
-            <p style="color:#aaa; letter-spacing:1px; margin-bottom: 20px;">INSTITUTIONAL SIGNAL ALGORITHM</p>
+// Initialize Telegram Bot
+const bot = new TelegramBot(CONFIG.TELEGRAM_TOKEN, { polling: true });
 
-            <div class="pricing-grid">
-                <div class="price-card">
-                    <span class="price-title">BASIC</span>
-                    <span class="price-amount">$20</span>
-                </div>
-                <div class="price-card">
-                    <span class="price-title">PRO</span>
-                    <span class="price-amount">$99</span>
-                </div>
-                <div class="price-card">
-                    <span class="price-title">VIP</span>
-                    <span class="price-amount">$500</span>
-                </div>
-            </div>
+// Initialize OneSignal Client
+const oneSignalClient = new OneSignal.Client(CONFIG.ONESIGNAL_APP_ID, CONFIG.ONESIGNAL_API_KEY);
 
-            <button class="btn-main" onclick="register()">
-                ⚡ DEPOSIT TO UNLOCK
-            </button>
+app.use(express.static('public'));
+app.use(bodyParser.json());
 
-            <div style="margin-top:20px; font-size:0.8rem; color:#666;">
-                SECURE CONNECTION • 256-BIT ENCRYPTED
-            </div>
-        </div>
-    </div>
+// --- DATABASE (Simple File Storage) ---
+// Saves Telegram subscribers so you don't lose them if the server restarts
+const DB_FILE = 'telegram_users.json';
+let telegramUsers = new Set();
 
-    <div id="dashboard">
-        <div class="dash-header">
-            <span style="font-weight:bold; color:#fff;">🔴 LIVE FEED</span>
-            <div id="my-tier" class="tier-badge tier-1">TIER 0 (LOCKED)</div>
-        </div>
-        <div id="feed"></div>
-    </div>
+// Load users from file on startup
+if (fs.existsSync(DB_FILE)) {
+    try {
+        const data = fs.readFileSync(DB_FILE);
+        telegramUsers = new Set(JSON.parse(data));
+        console.log(`✅ Loaded ${telegramUsers.size} Telegram subscribers.`);
+    } catch (e) {
+        console.log("⚠️ Could not load database file, starting fresh.");
+    }
+}
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        
-        // 1. User Identity (Stored in Browser)
-        let userId = localStorage.getItem('u_id');
-        if(!userId) {
-            userId = 'user_' + Math.floor(Math.random() * 1000000);
-            localStorage.setItem('u_id', userId);
-        }
+function saveUsers() {
+    fs.writeFileSync(DB_FILE, JSON.stringify([...telegramUsers]));
+}
 
-        let currentTier = 0; 
+// In-Memory Storage for Affiliate Tracking
+let websiteUsers = {}; // Stores user tier info
+let clickIdMap = {};   // Maps unique Click IDs to User IDs
 
-        // 2. Register Button Logic (Generates Link)
-        async function register() {
-            const btn = document.querySelector('.btn-main');
-            btn.innerText = "GENERATING LINK...";
+// ==========================================
+// 🤖 TELEGRAM BOT LOGIC
+// ==========================================
+
+// 1. Handle /start (Welcome Message)
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+    telegramUsers.add(chatId);
+    saveUsers();
+
+    const welcomeMsg = `👋 **Welcome to Godspower Agentic Signals!**
+
+To start making profit with us:
+
+1️⃣ **Join the Teaching Channel:**
+${CONFIG.TELEGRAM_CHANNEL_LINK}
+
+2️⃣ **Register & Deposit to Unlock Signals:**
+👉 [Click Here to Open App](${CONFIG.SITE_URL})
+
+_Wait for the "Live" alert to see me trade!_ 🚀`;
+
+    bot.sendMessage(chatId, welcomeMsg, { parse_mode: 'Markdown' });
+});
+
+// 2. Handle /stop (Unsubscribe)
+bot.onText(/\/stop/, (msg) => {
+    const chatId = msg.chat.id;
+    if (telegramUsers.has(chatId)) {
+        telegramUsers.delete(chatId);
+        saveUsers();
+        bot.sendMessage(chatId, "🔕 You have unsubscribed from alerts.");
+    }
+});
+
+// ==========================================
+// 📡 ADMIN ACTION: "I AM LIVE"
+// ==========================================
+// Trigger this by visiting: https://agentic-signal.onrender.com/admin/go-live?secret=godspower123
+app.get('/admin/go-live', (req, res) => {
+    if (req.query.secret !== CONFIG.ADMIN_SECRET) return res.send("❌ Access Denied: Wrong Password.");
+
+    const liveMsg = `🔴 **I AM LIVE NOW!**
+
+I am teaching how to use the signals and trading live.
+Don't miss this session!
+
+👇 **JOIN STREAM NOW:**
+${CONFIG.TELEGRAM_CHANNEL_LINK}`;
+
+    let count = 0;
+    telegramUsers.forEach(chatId => {
+        bot.sendMessage(chatId, liveMsg, { parse_mode: 'Markdown' }).catch(() => {});
+        count++;
+    });
+
+    res.send(`✅ Broadcast sent to ${count} users!`);
+});
+
+// ==========================================
+// 💰 AFFILIATE & POSTBACK LOGIC
+// ==========================================
+
+// 1. Generate Link (Called when user clicks "Deposit" on your site)
+app.get('/generate-link', (req, res) => {
+    const userId = req.query.userId;
+    const clickId = uuidv4(); // Unique ID for this click
+    
+    // Remember who clicked this link
+    if(!websiteUsers[userId]) websiteUsers[userId] = { tier: 0 };
+    clickIdMap[clickId] = userId;
+    
+    // Construct the IQ Option Link
+    // We send 'clickId' inside the 'aff_sub' parameter so IQ Option can send it back later
+    const link = `https://iqoption.com/land/register?aff=${CONFIG.AFFILIATE_ID}&aff_sub=${clickId}`;
+    
+    res.json({ link: link });
+});
+
+// 2. Postback Handler (IQ Option calls this automatically after deposit)
+app.get('/api/postback', (req, res) => {
+    // IQ Option sends the ID back in 'aff_sub' or 'click_id'
+    const clickId = req.query.aff_sub || req.query.click_id; 
+    const amount = parseFloat(req.query.amount) || 0; // The deposit amount
+    
+    console.log(`💰 Postback: ID=${clickId} Amount=$${amount}`);
+
+    if (clickId && clickIdMap[clickId]) {
+        const userId = clickIdMap[clickId];
+        let newTier = 0;
+
+        // --- UPDATED TIER LOGIC ---
+        if (amount >= 25 && amount < 99) newTier = 1;   // BASIC ($25-$99)
+        if (amount >= 99 && amount < 500) newTier = 2;  // PRO ($99-$500)
+        if (amount >= 500) newTier = 3;                 // VIP ($500+)
+        // --------------------------
+
+        if (newTier > 0) {
+            // Update User
+            websiteUsers[userId].tier = newTier;
             
-            try {
-                const res = await fetch(`/generate-link?userId=${userId}`);
-                const data = await res.json();
-                window.open(data.link, '_blank');
-                btn.innerText = "WAITING FOR DEPOSIT...";
-            } catch(e) {
-                alert("Error connecting to server.");
-                btn.innerText = "TRY AGAIN";
+            // Instantly Unlock the Website for this User
+            io.to(userId).emit('account_unlocked', { 
+                tier: newTier, 
+                message: `Deposit of $${amount} Confirmed! You are now Tier ${newTier}` 
+            });
+            
+            console.log(`✅ User ${userId} upgraded to Tier ${newTier}`);
+        }
+    }
+    res.send("Postback Received");
+});
+
+// ==========================================
+// 📈 SIGNAL GENERATOR
+// ==========================================
+
+// Timer Variables to prevent spam
+let lastOneSignalTime = 0; 
+let lastTelegramTime = 0;
+
+setInterval(async () => {
+    // 1. Generate Random Market Logic
+    const pairs = ['EUR/USD', 'GBP/USD', 'OTC-GOLD', 'BTC/USD'];
+    const pair = pairs[Math.floor(Math.random() * pairs.length)];
+    const rsi = Math.floor(Math.random() * 100);
+    
+    let decision = "HOLD";
+    if (rsi > 75) decision = "PUT (SELL) ⬇";
+    if (rsi < 25) decision = "CALL (BUY) ⬆";
+
+    if (decision !== "HOLD") {
+        
+        // Determine Tier Requirement (Gold/BTC are VIP only)
+        let tierRequired = 1;
+        if(pair === 'OTC-GOLD' || pair === 'BTC/USD') tierRequired = 3;
+        else if(pair === 'GBP/USD') tierRequired = 2;
+
+        const signalData = {
+            pair, 
+            price: (1.0000 + Math.random()).toFixed(4),
+            rsi, 
+            decision, 
+            tierRequired,
+            timestamp: new Date().toLocaleTimeString()
+        };
+
+        // 2. Send to Website (Instant)
+        io.emit('new_signal', signalData);
+
+        // 3. OneSignal Push (Only for Tier 3 Signals, Max once per hour)
+        if (tierRequired === 3) {
+            const now = Date.now();
+            if (now - lastOneSignalTime > (60 * 60 * 1000)) { // 1 Hour Cooldown
+                const notification = {
+                    contents: { 'en': `🚨 ${pair} MOVING FAST! \nType: ${decision}\nOpen App Now!` },
+                    headings: { 'en': '💎 VIP SIGNAL ALERT' },
+                    included_segments: ["Subscribed Users"]
+                };
+                try { 
+                    await oneSignalClient.createNotification(notification); 
+                    lastOneSignalTime = now;
+                    console.log("📲 OneSignal Sent");
+                } catch(e){ console.log("OneSignal Error", e); }
             }
         }
 
-        // 3. Listen for Unlock/Tier Update
-        socket.on('account_unlocked', (data) => { updateTier(data.tier, data.message); });
-        socket.on('tier_update', (data) => { updateTier(data.tier, "Tier Updated!"); });
-
-        function updateTier(tier, msg) {
-            currentTier = tier;
-            // Hide Lock Screen, Show Dashboard
-            document.getElementById('lock-screen').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'block';
-            
-            // Update Badge
-            const badge = document.getElementById('my-tier');
-            badge.innerText = "TIER " + currentTier;
-            badge.className = "tier-badge tier-" + currentTier;
-            
-            alert("🔓 " + msg);
-        }
-
-        // 4. Receive Signals
-        socket.on('new_signal', (data) => {
-            // If user is still on lock screen, do nothing visually
-            const feed = document.getElementById('feed');
-            const div = document.createElement('div');
-            
-            const isCall = data.decision.includes('CALL') || data.decision.includes('Buy');
-            const isLocked = data.tierRequired > currentTier;
-            
-            div.className = `signal-card ${isCall ? 'call' : 'put'}`;
-            
-            div.innerHTML = `
-                ${isLocked ? `<div class="blur-overlay"><span>🔒 VIP SIGNAL</span><small style="color:#aaa">Requires Tier ${data.tierRequired}</small></div>` : ''}
-                
-                <div class="signal-header">
-                    <span>${data.pair}</span>
-                    <span style="font-size:0.9rem; opacity:0.7">${data.timestamp}</span>
-                </div>
-                
-                <div class="decision">${data.decision}</div>
-                
-                <div style="display:flex; justify-content:space-between; font-size:0.9rem; color:#ccc;">
-                    <span>Entry: ${data.price}</span>
-                    <span>RSI: ${data.rsi}</span>
-                </div>
-            `;
-            
-            feed.prepend(div);
-            // Keep feed clean (max 10 signals)
-            if(feed.children.length > 10) feed.lastChild.remove();
-        });
-    </script>
-</body>
-</html>" }); // REPLACE THIS
-      });
-    </script>
-</head>
-<body>
-
-    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnJ2ZmV3bnZ5cWJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L1R1TVThqcebPqF8M/giphy.gif" class="video-bg" alt="bg">
-
-    <div id="lock-screen">
-        <div class="glass-panel">
-            <div><span class="status-dot"></span> SYSTEM ONLINE</div>
-            <h1>AGENTIC AI</h1>
-            <p style="color:#aaa; letter-spacing:1px; margin-bottom: 20px;">INSTITUTIONAL SIGNAL ALGORITHM</p>
-
-            <div class="pricing-grid">
-                <div class="price-card">
-                    <span class="price-title">BASIC</span>
-                    <span class="price-amount">$20</span>
-                </div>
-                <div class="price-card">
-                    <span class="price-title">PRO</span>
-                    <span class="price-amount">$99</span>
-                </div>
-                <div class="price-card">
-                    <span class="price-title">VIP</span>
-                    <span class="price-amount">$500</span>
-                </div>
-            </div>
-
-            <button class="btn-main" onclick="register()">
-                ⚡ DEPOSIT TO UNLOCK
-            </button>
-
-            <div style="margin-top:20px; font-size:0.8rem; color:#666;">
-                SECURE CONNECTION • 256-BIT ENCRYPTED
-            </div>
-        </div>
-    </div>
-
-    <div id="dashboard">
-        <div class="dash-header">
-            <span style="font-weight:bold; color:#fff;">🔴 LIVE FEED</span>
-            <div id="my-tier" class="tier-badge tier-1">TIER 0 (LOCKED)</div>
-        </div>
-        <div id="feed"></div>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        
-        // 1. User Identity (Stored in Browser)
-        let userId = localStorage.getItem('u_id');
-        if(!userId) {
-            userId = 'user_' + Math.floor(Math.random() * 1000000);
-            localStorage.setItem('u_id', userId);
-        }
-
-        let currentTier = 0; 
-
-        // 2. Register Button Logic (Generates Link)
-        async function register() {
-            const btn = document.querySelector('.btn-main');
-            btn.innerText = "GENERATING LINK...";
-            
-            try {
-                const res = await fetch(`/generate-link?userId=${userId}`);
-                const data = await res.json();
-                window.open(data.link, '_blank');
-                btn.innerText = "WAITING FOR DEPOSIT...";
-            } catch(e) {
-                alert("Error connecting to server.");
-                btn.innerText = "TRY AGAIN";
+        // 4. Telegram Teaser (Only for VIP signals, Max once per 30 mins)
+        if (tierRequired === 3) {
+            const now = Date.now();
+            if (now - lastTelegramTime > (30 * 60 * 1000)) { // 30 Mins Cooldown
+                const teaserMsg = `🔥 **VIP SIGNAL DETECTED** 🔥\n\nAsset: ${pair}\nDirection: HIDDEN 🔒\n\n👇 **Log in to the app to see the direction!**\n${CONFIG.SITE_URL}`;
+                telegramUsers.forEach(chatId => {
+                    bot.sendMessage(chatId, teaserMsg, { parse_mode: 'Markdown' }).catch(() => {});
+                });
+                lastTelegramTime = now;
+                console.log("✈ Telegram Teaser Sent");
             }
         }
+    }
+}, 60000); // Check every 60 seconds
 
-        // 3. Listen for Unlock/Tier Update
-        socket.on('account_unlocked', (data) => { updateTier(data.tier, data.message); });
-        socket.on('tier_update', (data) => { updateTier(data.tier, "Tier Updated!"); });
-
-        function updateTier(tier, msg) {
-            currentTier = tier;
-            // Hide Lock Screen, Show Dashboard
-            document.getElementById('lock-screen').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'block';
-            
-            // Update Badge
-            const badge = document.getElementById('my-tier');
-            badge.innerText = "TIER " + currentTier;
-            badge.className = "tier-badge tier-" + currentTier;
-            
-            alert("🔓 " + msg);
-        }
-
-        // 4. Receive Signals
-        socket.on('new_signal', (data) => {
-            // If user is still on lock screen, do nothing visually
-            const feed = document.getElementById('feed');
-            const div = document.createElement('div');
-            
-            const isCall = data.decision.includes('CALL') || data.decision.includes('Buy');
-            const isLocked = data.tierRequired > currentTier;
-            
-            div.className = `signal-card ${isCall ? 'call' : 'put'}`;
-            
-            div.innerHTML = `
-                ${isLocked ? `<div class="blur-overlay"><span>🔒 VIP SIGNAL</span><small style="color:#aaa">Requires Tier ${data.tierRequired}</small></div>` : ''}
-                
-                <div class="signal-header">
-                    <span>${data.pair}</span>
-                    <span style="font-size:0.9rem; opacity:0.7">${data.timestamp}</span>
-                </div>
-                
-                <div class="decision">${data.decision}</div>
-                
-                <div style="display:flex; justify-content:space-between; font-size:0.9rem; color:#ccc;">
-                    <span>Entry: ${data.price}</span>
-                    <span>RSI: ${data.rsi}</span>
-                </div>
-            `;
-            
-            feed.prepend(div);
-            // Keep feed clean (max 10 signals)
-            if(feed.children.length > 10) feed.lastChild.remove();
-        });
-    </script>
-</body>
-</html>
+// Start Server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
