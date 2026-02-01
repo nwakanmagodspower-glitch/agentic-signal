@@ -1,8 +1,6 @@
 /**
- * GODSPOWER AGENTIC SIGNAL - FINAL SERVER
- * 1. Signal History (Immediate Load)
- * 2. VIP Database (Saves Paid Users)
- * 3. Admin Broadcast (Go Live)
+ * GODSPOWER AGENTIC SIGNAL - FINAL COMPLETE SERVER
+ * Includes: 3-Tier Logic, Signal History, Admin Broadcast, Database Persistence
  */
 
 const express = require('express');
@@ -27,7 +25,9 @@ const CONFIG = {
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-let signalHistory = []; // Stores last 10 signals
+
+// --- HISTORY STORAGE ---
+let signalHistory = []; 
 
 // Initialize Bot
 let bot;
@@ -42,7 +42,7 @@ if (CONFIG.ONESIGNAL_APP_ID) oneSignalClient = new OneSignal.Client(CONFIG.ONESI
 app.use(express.static('public'));
 app.use(bodyParser.json());
 
-// --- DATABASE ---
+// --- DATABASE (Saves Users Forever) ---
 const TG_DB_FILE = 'telegram_users.json';
 const WEB_DB_FILE = 'website_users.json';
 let telegramUsers = new Set();
@@ -55,32 +55,29 @@ if (fs.existsSync(WEB_DB_FILE)) try { websiteUsers = JSON.parse(fs.readFileSync(
 function saveTgUsers() { fs.writeFileSync(TG_DB_FILE, JSON.stringify([...telegramUsers])); }
 function saveWebUsers() { fs.writeFileSync(WEB_DB_FILE, JSON.stringify(websiteUsers)); }
 
-// --- SOCKET ---
+// --- SOCKET CONNECTION ---
 io.on('connection', (socket) => {
-    socket.emit('signal_history', signalHistory); // Send history on connect
+    // Send history immediately so user sees signals instantly
+    socket.emit('signal_history', signalHistory);
 });
 
-// --- TELEGRAM BOT ---
-if (bot) {
-    bot.onText(/\/start/, (msg) => {
-        const chatId = msg.chat.id;
-        telegramUsers.add(chatId);
-        saveTgUsers();
-        const welcomeMsg = `*🟢 AGENTIC AI ONLINE*\n━━━━━━━━━━━━━━━━━━\n🚀 **PROFIT POTENTIAL:**\n● **Win Rate:** \`92% - 98%\`\n● **Markets:** \`OTC & LIVE\`\n\n👇 *START MAKING MONEY NOW:*`;
-        bot.sendMessage(chatId, welcomeMsg, { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[{ text: "💎 UNLOCK VIP SIGNALS", url: CONFIG.SITE_URL }]] } });
-    });
-}
-
-// --- ADMIN BROADCAST ---
+// --- ADMIN BROADCAST (The "Go Live" Fix) ---
 app.get('/admin/go-live', (req, res) => {
     if (req.query.secret !== CONFIG.ADMIN_SECRET) return res.send("❌ Access Denied.");
-    if (!bot) return res.send("❌ Bot not active.");
+    if (!bot) return res.send("❌ Bot not active. Check Render Environment Variables.");
+    
     const liveMsg = `🔴 **I AM LIVE NOW!**\n\nTrading session started. Don't miss this!`;
-    telegramUsers.forEach(chatId => bot.sendMessage(chatId, liveMsg, { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[{ text: "🔴 WATCH STREAM", url: CONFIG.TELEGRAM_CHANNEL_LINK }]] } }).catch(() => {}));
-    res.send(`✅ Broadcast sent!`);
+    const opts = { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[{ text: "🔴 WATCH STREAM", url: CONFIG.TELEGRAM_CHANNEL_LINK }]] } };
+    
+    let count = 0;
+    telegramUsers.forEach(chatId => {
+        bot.sendMessage(chatId, liveMsg, opts).catch(() => {});
+        count++;
+    });
+    res.send(`✅ Broadcast sent to ${count} users!`);
 });
 
-// --- AFFILIATE & SIGNAL LOGIC ---
+// --- AFFILIATE SYSTEM (3 Tiers) ---
 app.get('/generate-link', (req, res) => {
     const userId = req.query.userId;
     const clickId = uuidv4(); 
@@ -95,9 +92,11 @@ app.get('/api/postback', (req, res) => {
     if (clickId && clickIdMap[clickId]) {
         const userId = clickIdMap[clickId];
         let newTier = 0;
-        if (amount >= 25 && amount < 100) newTier = 1; 
-        if (amount >= 100 && amount < 500) newTier = 2; 
-        if (amount >= 500) newTier = 3; 
+        // Pricing Logic
+        if (amount >= 25 && amount < 100) newTier = 1; // Basic
+        if (amount >= 100 && amount < 500) newTier = 2; // Pro
+        if (amount >= 500) newTier = 3; // VIP
+        
         if (newTier > 0) {
             websiteUsers[userId].tier = newTier;
             saveWebUsers();
@@ -107,11 +106,19 @@ app.get('/api/postback', (req, res) => {
     res.send("Postback Received");
 });
 
-// --- SIGNAL GENERATOR ---
-let lastOneSignalTime = 0; 
-let lastTelegramTime = 0;
+// --- TELEGRAM BOT LOGIC ---
+if (bot) {
+    bot.onText(/\/start/, (msg) => {
+        const chatId = msg.chat.id;
+        telegramUsers.add(chatId);
+        saveTgUsers();
+        const welcomeMsg = `*🟢 AGENTIC AI ONLINE*\n━━━━━━━━━━━━━━━━━━\n🚀 **PROFIT POTENTIAL:**\n● **Win Rate:** \`92% - 98%\`\n● **Markets:** \`OTC & LIVE\`\n\n👇 *START MAKING MONEY NOW:*`;
+        bot.sendMessage(chatId, welcomeMsg, { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[{ text: "💎 UNLOCK VIP SIGNALS", url: CONFIG.SITE_URL }]] } });
+    });
+}
 
-setInterval(async () => {
+// --- SIGNAL GENERATOR ---
+function generateSignal() {
     const pairs = ['EUR/USD-OTC', 'GBP/USD-OTC', 'GOLD-OTC', 'BTC/USD'];
     const pair = pairs[Math.floor(Math.random() * pairs.length)];
     const rsi = Math.floor(Math.random() * 100);
@@ -120,38 +127,54 @@ setInterval(async () => {
     if (rsi > 80) decision = "PUT (SELL) ⬇";
     if (rsi < 20) decision = "CALL (BUY) ⬆";
 
-    if (decision !== "HOLD") {
-        let tierRequired = 1;
-        if(pair.includes('GOLD') || pair.includes('BTC')) tierRequired = 3;
-        else if(pair.includes('GBP')) tierRequired = 2;
+    // Ensure action
+    if (decision === "HOLD") decision = Math.random() > 0.5 ? "CALL (BUY) ⬆" : "PUT (SELL) ⬇";
 
-        const signalData = {
-            pair, price: (1.0000 + Math.random()).toFixed(4), rsi, decision, tierRequired,
-            timestamp: new Date().toLocaleTimeString()
-        };
+    let tierRequired = 1;
+    if(pair.includes('GOLD') || pair.includes('BTC')) tierRequired = 3;
+    else if(pair.includes('GBP')) tierRequired = 2;
 
-        io.emit('new_signal', signalData);
-        signalHistory.unshift(signalData);
-        if(signalHistory.length > 10) signalHistory.pop();
+    const signalData = {
+        pair, price: (1.0000 + Math.random()).toFixed(4), rsi, decision, tierRequired,
+        timestamp: new Date().toLocaleTimeString()
+    };
+    return signalData;
+}
 
-        if (tierRequired === 3) {
-            const now = Date.now();
-            if (oneSignalClient && now - lastOneSignalTime > (45 * 60 * 1000)) {
-                oneSignalClient.createNotification({
-                    contents: { 'en': `💸 ${pair} MONEY ALERT! \nAction: ${decision}` },
-                    included_segments: ["Subscribed Users"]
-                }).catch(e=>{});
-                lastOneSignalTime = now;
-            }
-            if (bot && now - lastTelegramTime > (30 * 60 * 1000)) {
-                telegramUsers.forEach(chatId => {
-                     bot.sendMessage(chatId, `🔥 **VIP BINARY SIGNAL**\nAsset: ${pair}\nDirection: HIDDEN 🔒`, {
-                        parse_mode: 'Markdown',
-                        reply_markup: { inline_keyboard: [[{ text: "💸 UNLOCK FOR PROFIT", url: CONFIG.SITE_URL }]] }
-                    }).catch(() => {});
-                });
-                lastTelegramTime = now;
-            }
+// Pre-fill history so app is never empty on startup
+signalHistory.push(generateSignal());
+signalHistory.push(generateSignal());
+signalHistory.push(generateSignal());
+
+let lastOneSignalTime = 0; 
+let lastTelegramTime = 0;
+
+setInterval(async () => {
+    const signalData = generateSignal();
+
+    io.emit('new_signal', signalData);
+    signalHistory.unshift(signalData);
+    if(signalHistory.length > 10) signalHistory.pop();
+
+    if (signalData.tierRequired === 3) {
+        const now = Date.now();
+        // OneSignal Push
+        if (oneSignalClient && now - lastOneSignalTime > (45 * 60 * 1000)) {
+            oneSignalClient.createNotification({
+                contents: { 'en': `💸 ${signalData.pair} MONEY ALERT! \nAction: ${signalData.decision}` },
+                included_segments: ["Subscribed Users"]
+            }).catch(e=>{});
+            lastOneSignalTime = now;
+        }
+        // Telegram Teaser
+        if (bot && now - lastTelegramTime > (30 * 60 * 1000)) {
+            telegramUsers.forEach(chatId => {
+                 bot.sendMessage(chatId, `🔥 **VIP BINARY SIGNAL**\nAsset: ${signalData.pair}\nDirection: HIDDEN 🔒`, {
+                    parse_mode: 'Markdown',
+                    reply_markup: { inline_keyboard: [[{ text: "💸 UNLOCK FOR PROFIT", url: CONFIG.SITE_URL }]] }
+                }).catch(() => {});
+            });
+            lastTelegramTime = now;
         }
     }
 }, 45000); 

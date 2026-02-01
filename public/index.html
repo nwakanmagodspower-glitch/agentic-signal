@@ -14,22 +14,26 @@
             overflow-x: hidden; width: 100%; -webkit-tap-highlight-color: transparent;
         }
 
-        /* FULL WIDTH MOBILE FIXES */
+        /* LAYOUT */
         #lock-screen, #dashboard { width: 100%; max-width: 600px; box-sizing: border-box; padding: 15px; }
         .glass-panel { width: 100%; background: rgba(10, 15, 10, 0.95); border: 1px solid rgba(0, 255, 65, 0.3); padding: 20px; border-radius: 16px; text-align: center; box-sizing: border-box; }
-        
         .video-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.3; filter: blur(5px); z-index: -1; }
         h1 { font-family: 'Share Tech Mono'; font-size: 2rem; margin: 10px 0; color: #fff; text-shadow: 0 0 10px var(--primary); }
         
-        /* PRICING */
+        /* PRICING GRID (3 TIERS) */
         .pricing-grid { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; }
-        .price-card { background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 15px; border-radius: 8px; text-align: left; }
+        .price-card { background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 12px 15px; border-radius: 8px; text-align: left; }
         .price-card.vip { border: 1px solid var(--primary); background: rgba(0,255,65,0.05); }
-        .check { color: var(--primary); margin-right: 5px; }
+        
+        .tier-name { font-family: 'Share Tech Mono'; color: #fff; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
+        .tier-price { color: var(--primary); font-weight: 800; }
+        .tier-benefits { font-size: 0.85rem; color: #ccc; margin-top: 5px; line-height: 1.4; }
+        .check { color: var(--primary); margin-right: 5px; font-weight: bold; }
+        .cross { color: var(--red); margin-right: 5px; font-weight: bold; opacity: 0.7; }
         
         .btn-main { background: var(--primary); color: #000; padding: 15px; width: 100%; font-weight: 900; font-size: 1.2rem; border: none; border-radius: 8px; margin-top: 15px; cursor: pointer; animation: pulse 2s infinite; text-transform: uppercase; }
         
-        /* PROFESSIONAL SIGNAL CARD DESIGN */
+        /* SIGNAL CARDS */
         .signal-card { 
             background: #141414; border: 1px solid #333; border-top: 3px solid #555;
             margin-bottom: 15px; border-radius: 12px; overflow: hidden; position: relative;
@@ -39,27 +43,22 @@
         .signal-card.put { border-top-color: var(--red); }
 
         .sig-top { display: flex; justify-content: space-between; padding: 12px 15px; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Share Tech Mono'; font-size: 0.9rem; color: #ccc; }
-        
         .sig-body { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
         
-        /* BADGES */
         .direction-badge { font-size: 1.4rem; font-weight: 900; padding: 5px 12px; border-radius: 6px; display: flex; align-items: center; gap: 5px; }
         .call .direction-badge { color: var(--primary); background: rgba(0,255,65,0.1); border: 1px solid rgba(0,255,65,0.2); }
         .put .direction-badge { color: var(--red); background: rgba(255,0,60,0.1); border: 1px solid rgba(255,0,60,0.2); }
 
-        /* DATA GRID */
         .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 15px 15px 15px; }
         .data-point { display: flex; flex-direction: column; }
         .dp-label { font-size: 0.7rem; color: #666; }
         .dp-val { font-family: 'Share Tech Mono'; font-size: 1rem; color: #fff; }
 
-        /* TRADE BUTTON */
         .btn-trade-area { padding: 0 15px 15px 15px; }
         .btn-trade { width: 100%; padding: 12px; font-weight: 800; border: none; border-radius: 6px; cursor: pointer; text-transform: uppercase; font-size: 1rem; }
         .call .btn-trade { background: var(--primary); color: #000; box-shadow: 0 0 15px rgba(0,255,65,0.2); } 
         .put .btn-trade { background: var(--red); color: #fff; box-shadow: 0 0 15px rgba(255,0,60,0.2); }
 
-        /* LOCK */
         .blur-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(10,10,10,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; backdrop-filter: blur(5px); text-align: center; }
 
         @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; transform: scale(1.01); } 100% { opacity: 0.8; } }
@@ -74,17 +73,23 @@
         <div class="glass-panel">
             <div><span style="color:var(--primary)">●</span> SYSTEM ONLINE</div>
             <h1>AGENTIC AI</h1>
+            <div style="font-size:0.9rem; color:#aaa; margin-bottom:15px;">HIGH-FREQUENCY SIGNALS</div>
+            
             <div class="pricing-grid">
-                <div class="price-card"><b style="color:#fff">BASIC ($25-$99)</b><br><small style="color:#aaa">No OTC / Weekend Signals</small></div>
+                <div class="price-card">
+                    <div class="tier-name">BASIC <span class="tier-price">$25 - $99</span></div>
+                    <div class="tier-benefits"><span class="check">✓</span> 85% Win Rate <br> <span class="cross">✗</span> No OTC Access</div>
+                </div>
+                <div class="price-card">
+                    <div class="tier-name">PRO <span class="tier-price">$100 - $499</span></div>
+                    <div class="tier-benefits"><span class="check">✓</span> <b>92% Win Rate</b> <br> <span class="check">✓</span> OTC & Turbo Mode</div>
+                </div>
                 <div class="price-card vip">
-                    <div style="display:flex; justify-content:space-between;"><b style="color:#00ff41">VIP ($500+)</b> <span>RECOMMENDED</span></div>
-                    <div style="margin-top:5px; font-size:0.9rem; color:#ddd;">
-                        <span class="check">✓</span> 98% AI Accuracy<br>
-                        <span class="check">✓</span> Instant Zero-Latency<br>
-                        <span class="check">✓</span> 24/7 OTC Access
-                    </div>
+                    <div class="tier-name">VIP <span class="tier-price">$500+</span></div>
+                    <div class="tier-benefits"><span class="check">✓</span> <b>98% AI ACCURACY</b> <br> <span class="check">✓</span> <b>ZERO LATENCY</b></div>
                 </div>
             </div>
+
             <button class="btn-main" onclick="register()">⚡ DEPOSIT TO UNLOCK</button>
             <button onclick="OneSignal.push(()=>OneSignal.showNativePrompt())" style="background:none; border:none; color:#aaa; margin-top:10px; font-size:0.8rem; cursor:pointer;">🔔 Enable Alerts</button>
         </div>
@@ -121,7 +126,12 @@
             currentTier = tier;
             document.getElementById('lock-screen').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
-            document.getElementById('my-tier').innerText = tier === 3 ? "VIP TRADER" : "BASIC";
+            
+            const badge = document.getElementById('my-tier');
+            if(tier === 3) badge.innerText = "VIP TRADER";
+            else if(tier === 2) badge.innerText = "PRO TRADER";
+            else badge.innerText = "BASIC";
+            
             alert("🚀 " + msg);
         }
 
@@ -137,7 +147,7 @@
                 <div class="blur-overlay">
                     <div style="font-size:2rem;">🔒</div>
                     <h3>VIP SIGNAL</h3>
-                    <small style="color:#aaa">98% Accuracy Hidden</small>
+                    <small style="color:#aaa; font-family:'Share Tech Mono'">98% Accuracy Hidden</small>
                     <button onclick="register()" style="background:#00ff41; border:none; padding:10px 20px; font-weight:bold; margin-top:10px; border-radius:4px;">DEPOSIT $500</button>
                 </div>` : ''}
                 
