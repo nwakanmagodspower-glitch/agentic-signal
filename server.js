@@ -4,8 +4,8 @@
  * 1. Secured Telegram Token (Via Render Vault)
  * 2. Automated Signal Generation
  * 3. Mobile Tiered Access ($25 / $100 / $500)
- * 4. Premium Bot Buttons (Inline Keyboard)
- * 5. Admin Live Broadcast
+ * 4. Premium Bot Buttons
+ * 5. UPDATED AFFILIATE LINK (Mobile PWA)
  */
 
 const express = require('express');
@@ -27,14 +27,14 @@ const CONFIG = {
     // 2. YOUR TELEGRAM CHANNEL LINK
     TELEGRAM_CHANNEL_LINK: 'https://t.me/+3KiO2QaEg8tjNzI0',
 
-    // 3. IQ OPTION AFFILIATE ID
-    AFFILIATE_ID: '228383', 
+    // 3. IQ OPTION AFFILIATE ID (Updated from your link)
+    AFFILIATE_ID: '782547', 
 
-    // 4. ONESIGNAL KEYS (Pulls from Render Vault - NO HARDCODED FALLBACKS)
+    // 4. ONESIGNAL KEYS (Pulls from Render Vault)
     ONESIGNAL_APP_ID: process.env.ONESIGNAL_APP_ID,
     ONESIGNAL_API_KEY: process.env.ONESIGNAL_API_KEY,
 
-    // 5. ADMIN PASSWORD (For "Go Live" link)
+    // 5. ADMIN PASSWORD
     ADMIN_SECRET: 'godspower123', 
     
     // 6. YOUR WEBSITE URL
@@ -67,7 +67,7 @@ if (CONFIG.ONESIGNAL_APP_ID && CONFIG.ONESIGNAL_API_KEY) {
     oneSignalClient = new OneSignal.Client(CONFIG.ONESIGNAL_APP_ID, CONFIG.ONESIGNAL_API_KEY);
     console.log("✅ OneSignal Client Initialized");
 } else {
-    console.log("⚠️ OneSignal Keys missing in Render. Push notifications will not work.");
+    console.log("⚠️ OneSignal Keys missing. Push notifications disabled.");
 }
 
 app.use(express.static('public'));
@@ -99,7 +99,6 @@ let clickIdMap = {};
 // ==========================================
 
 if (bot) {
-    // 1. Handle /start (PREMIUM BUTTONS)
     bot.onText(/\/start/, (msg) => {
         const chatId = msg.chat.id;
         telegramUsers.add(chatId);
@@ -122,12 +121,8 @@ Welcome, trader. You have connected to the institutional-grade signal network.
             parse_mode: 'Markdown',
             reply_markup: {
                 inline_keyboard: [
-                    [
-                        { text: "💎 OPEN SIGNAL TERMINAL", url: CONFIG.SITE_URL }
-                    ],
-                    [
-                        { text: "📚 JOIN TRADING ACADEMY", url: CONFIG.TELEGRAM_CHANNEL_LINK }
-                    ]
+                    [{ text: "💎 OPEN SIGNAL TERMINAL", url: CONFIG.SITE_URL }],
+                    [{ text: "📚 JOIN TRADING ACADEMY", url: CONFIG.TELEGRAM_CHANNEL_LINK }]
                 ]
             }
         };
@@ -135,7 +130,6 @@ Welcome, trader. You have connected to the institutional-grade signal network.
         bot.sendMessage(chatId, welcomeMsg, opts);
     });
 
-    // 2. Handle /stop
     bot.onText(/\/stop/, (msg) => {
         const chatId = msg.chat.id;
         if (telegramUsers.has(chatId)) {
@@ -154,8 +148,6 @@ app.get('/admin/go-live', (req, res) => {
     if (!bot) return res.send("❌ Bot not active.");
 
     const liveMsg = `🔴 **I AM LIVE NOW!**\n\nI am teaching how to use the signals and trading live.\nDon't miss this session!`;
-    
-    // Button to join stream
     const opts = {
         parse_mode: 'Markdown',
         reply_markup: {
@@ -175,7 +167,7 @@ app.get('/admin/go-live', (req, res) => {
 });
 
 // ==========================================
-// 💰 AFFILIATE & POSTBACK LOGIC
+// 💰 AFFILIATE & POSTBACK LOGIC (UPDATED LINK)
 // ==========================================
 
 app.get('/generate-link', (req, res) => {
@@ -185,8 +177,9 @@ app.get('/generate-link', (req, res) => {
     if(!websiteUsers[userId]) websiteUsers[userId] = { tier: 0 };
     clickIdMap[clickId] = userId;
     
-    // IQ Option Link
-    const link = `https://iqoption.com/land/register?aff=${CONFIG.AFFILIATE_ID}&aff_sub=${clickId}`;
+    // --- UPDATED LINK HERE ---
+    const link = `https://iqoption.net/lp/mobile-partner-pwa/?aff=${CONFIG.AFFILIATE_ID}&aff_model=revenue&afftrack=${clickId}`;
+    
     res.json({ link: link });
 });
 
@@ -200,10 +193,10 @@ app.get('/api/postback', (req, res) => {
         const userId = clickIdMap[clickId];
         let newTier = 0;
 
-        // --- MOBILE PRICING LOGIC (UPDATED) ---
-        if (amount >= 25 && amount < 100) newTier = 1;   // BASIC ($25 - $99)
-        if (amount >= 100 && amount < 500) newTier = 2;  // PRO ($100 - $499)
-        if (amount >= 500) newTier = 3;                  // VIP ($500+)
+        // Mobile Pricing: $25 (Basic), $100 (Pro), $500 (VIP)
+        if (amount >= 25 && amount < 100) newTier = 1; 
+        if (amount >= 100 && amount < 500) newTier = 2; 
+        if (amount >= 500) newTier = 3; 
 
         if (newTier > 0) {
             websiteUsers[userId].tier = newTier;
@@ -220,7 +213,6 @@ app.get('/api/postback', (req, res) => {
 // ==========================================
 // 📈 SIGNAL GENERATOR
 // ==========================================
-
 let lastOneSignalTime = 0; 
 let lastTelegramTime = 0;
 
@@ -266,7 +258,7 @@ setInterval(async () => {
             }
         }
 
-        // Telegram Teaser WITH BUTTONS
+        // Telegram Teaser
         if (tierRequired === 3 && bot) {
             const now = Date.now();
             if (now - lastTelegramTime > (30 * 60 * 1000)) { 
