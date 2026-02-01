@@ -1,6 +1,7 @@
 /**
  * GODSPOWER AGENTIC SIGNAL - FINAL BINARY SERVER
  * Focus: High Volume, RevShare Optimization, Binary Options
+ * UPDATE: Added Persistent Database for Paid Users
  */
 
 const express = require('express');
@@ -48,16 +49,37 @@ if (CONFIG.ONESIGNAL_APP_ID && CONFIG.ONESIGNAL_API_KEY) {
 app.use(express.static('public'));
 app.use(bodyParser.json());
 
-// --- DATABASE ---
-const DB_FILE = 'telegram_users.json';
-let telegramUsers = new Set();
-if (fs.existsSync(DB_FILE)) {
-    try { telegramUsers = new Set(JSON.parse(fs.readFileSync(DB_FILE))); } catch (e) {}
-}
-function saveUsers() { fs.writeFileSync(DB_FILE, JSON.stringify([...telegramUsers])); }
+// ==========================================
+// 💾 DATABASE SYSTEM (PERSISTENT STORAGE)
+// ==========================================
 
+// 1. Telegram Users DB
+const TG_DB_FILE = 'telegram_users.json';
+let telegramUsers = new Set();
+if (fs.existsSync(TG_DB_FILE)) {
+    try { telegramUsers = new Set(JSON.parse(fs.readFileSync(TG_DB_FILE))); } catch (e) {}
+}
+function saveTgUsers() { fs.writeFileSync(TG_DB_FILE, JSON.stringify([...telegramUsers])); }
+
+// 2. Website Users DB (VIPs) - NEW CRITICAL ADDITION
+const WEB_DB_FILE = 'website_users.json';
 let websiteUsers = {}; 
 let clickIdMap = {};   
+
+// Load VIPs from file on startup
+if (fs.existsSync(WEB_DB_FILE)) {
+    try {
+        websiteUsers = JSON.parse(fs.readFileSync(WEB_DB_FILE));
+        console.log(`✅ Loaded ${Object.keys(websiteUsers).length} Website Users`);
+    } catch (e) {
+        console.log("⚠️ Created new database for website users.");
+    }
+}
+
+// Function to save VIPs to file
+function saveWebUsers() {
+    fs.writeFileSync(WEB_DB_FILE, JSON.stringify(websiteUsers));
+}
 
 // ==========================================
 // 🤖 AGGRESSIVE BINARY BOT LOGIC
@@ -67,7 +89,7 @@ if (bot) {
     bot.onText(/\/start/, (msg) => {
         const chatId = msg.chat.id;
         telegramUsers.add(chatId);
-        saveUsers();
+        saveTgUsers(); // Save to file
 
         const welcomeMsg = `
 *🟢 AGENTIC AI: BINARY PROFIT SYSTEM*
@@ -103,10 +125,15 @@ if (bot) {
 app.get('/generate-link', (req, res) => {
     const userId = req.query.userId;
     const clickId = uuidv4(); 
-    if(!websiteUsers[userId]) websiteUsers[userId] = { tier: 0 };
+    
+    // Create user if not exists
+    if(!websiteUsers[userId]) {
+        websiteUsers[userId] = { tier: 0 };
+        saveWebUsers(); // Save new user
+    }
+    
     clickIdMap[clickId] = userId;
     
-    // Direct to Mobile Partner PWA for maximum conversion
     const link = `https://iqoption.net/lp/mobile-partner-pwa/?aff=${CONFIG.AFFILIATE_ID}&aff_model=revenue&afftrack=${clickId}`;
     res.json({ link: link });
 });
@@ -125,11 +152,15 @@ app.get('/api/postback', (req, res) => {
         if (amount >= 500) newTier = 3; 
 
         if (newTier > 0) {
-            websiteUsers[userId].tier = newTier;
+            // Update User
+            websiteUsers[userId] = { tier: newTier };
+            saveWebUsers(); // <--- CRITICAL: SAVES VIP STATUS TO FILE
+            
             io.to(userId).emit('account_unlocked', { 
                 tier: newTier, 
                 message: `Deposit of $${amount} Received! VIP ACCESS UNLOCKED. 🚀` 
             });
+            console.log(`✅ User ${userId} Saved as Tier ${newTier}`);
         }
     }
     res.send("Postback Received");
@@ -142,12 +173,12 @@ let lastOneSignalTime = 0;
 let lastTelegramTime = 0;
 
 setInterval(async () => {
-    const pairs = ['EUR/USD-OTC', 'GBP/USD-OTC', 'GOLD-OTC', 'BTC/USD']; // OTC focus for binary
+    const pairs = ['EUR/USD-OTC', 'GBP/USD-OTC', 'GOLD-OTC', 'BTC/USD']; 
     const pair = pairs[Math.floor(Math.random() * pairs.length)];
     const rsi = Math.floor(Math.random() * 100);
     
     let decision = "HOLD";
-    if (rsi > 80) decision = "PUT (SELL) ⬇"; // Binary Terminology
+    if (rsi > 80) decision = "PUT (SELL) ⬇"; 
     if (rsi < 20) decision = "CALL (BUY) ⬆";
 
     if (decision !== "HOLD") {
@@ -164,7 +195,7 @@ setInterval(async () => {
 
         io.emit('new_signal', signalData);
 
-        // OneSignal: Aggressive "Money" Alert
+        // OneSignal
         if (tierRequired === 3 && oneSignalClient) {
             const now = Date.now();
             if (now - lastOneSignalTime > (45 * 60 * 1000)) { 
@@ -200,7 +231,7 @@ setInterval(async () => {
             }
         }
     }
-}, 45000); // Faster signals (45s) for "Turbo" feel
+}, 45000); 
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => { console.log(`Server running on port ${PORT}`); });
