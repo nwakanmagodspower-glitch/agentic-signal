@@ -1,13 +1,9 @@
 /**
- * GODSPOWER AGENTIC SIGNAL - PROFESSIONAL EDITION (FINAL)
- * -------------------------------------------------------
- * VERIFIED FEATURES:
- * 1. Auto-Approve & Delayed Welcome (Professional Flow)
- * 2. User Memory (Session Restoration)
- * 3. Smart Expiry (Weighted Random Logic)
- * 4. 3-Tier Pricing (Basic/Pro/VIP)
- * 5. Signal History & Admin Broadcast
- * 6. Correct Asset Names (XAU/USD)
+ * GODSPOWER AGENTIC SIGNAL - PROFESSIONAL EDITION (PATCHED)
+ * ---------------------------------------------------------
+ * FIXED: Telegram Join Request Listener (Added allowed_updates)
+ * FIXED: Message Delivery (Extended Delay + Error Logging)
+ * VERIFIED: 3-Tier Pricing, Smart Expiry, User Memory, Alerts
  */
 
 const express = require('express');
@@ -50,12 +46,19 @@ if (fs.existsSync(WEB_DB_FILE)) try { websiteUsers = JSON.parse(fs.readFileSync(
 function saveTgUsers() { fs.writeFileSync(TG_DB_FILE, JSON.stringify([...telegramUsers])); }
 function saveWebUsers() { fs.writeFileSync(WEB_DB_FILE, JSON.stringify(websiteUsers)); }
 
-// --- BOT INITIALIZATION ---
+// --- BOT INITIALIZATION (FIXED LISTENER) ---
 let bot;
 try {
     if (CONFIG.TELEGRAM_TOKEN) {
-        bot = new TelegramBot(CONFIG.TELEGRAM_TOKEN, { polling: true });
-        console.log("✅ PROFESSIONAL BOT STARTED");
+        // CRITICAL FIX: Explicitly asking Telegram for 'chat_join_request' updates
+        bot = new TelegramBot(CONFIG.TELEGRAM_TOKEN, { 
+            polling: { 
+                params: { 
+                    allowed_updates: ["message", "callback_query", "chat_join_request", "channel_post"] 
+                } 
+            } 
+        });
+        console.log("✅ PROFESSIONAL BOT STARTED (Join Listener Active)");
     }
 } catch (e) { console.log("⚠️ Bot Error:", e.message); }
 
@@ -69,10 +72,8 @@ app.use(bodyParser.json());
 // 🔌 SOCKET CONNECTION (USER MEMORY)
 // ==========================================
 io.on('connection', (socket) => {
-    // 1. Send History Immediately
     socket.emit('signal_history', signalHistory);
 
-    // 2. CHECK USER MEMORY (Restore VIP Session)
     socket.on('check_user_status', (userId) => {
         if (websiteUsers[userId] && websiteUsers[userId].tier > 0) {
             socket.emit('account_unlocked', {
@@ -116,7 +117,6 @@ app.get('/api/postback', (req, res) => {
         const userId = clickIdMap[clickId];
         let newTier = 0;
 
-        // 3-TIER LOGIC
         if (amount >= 25 && amount < 100) newTier = 1; // Basic
         if (amount >= 100 && amount < 500) newTier = 2; // Pro
         if (amount >= 500) newTier = 3; // VIP
@@ -141,20 +141,25 @@ if (bot) {
     // 2. AUTO-APPROVE + DELAYED WELCOME
     bot.on('chat_join_request', async (msg) => {
         const userId = msg.from.id;
-        const name = msg.from.first_name;
+        const name = msg.from.first_name || "Trader";
+        const chatId = msg.chat.id;
 
-        console.log(`🔒 Request from: ${name}`);
+        console.log(`🔒 JOIN REQUEST DETECTED from: ${name} (ID: ${userId})`);
 
         // STEP A: APPROVE IMMEDIATELY
         try {
-            await bot.approveChatJoinRequest(msg.chat.id, userId);
-            console.log(`✅ Approved ${name}`);
-        } catch (e) { console.log(`❌ Approval Error: ${e.message}`); }
+            await bot.approveChatJoinRequest(chatId, userId);
+            console.log(`✅ Approved ${name} into channel.`);
+        } catch (e) { 
+            console.log(`❌ Approval Error for ${name}: ${e.message}`); 
+        }
 
-        // STEP B: SEND MESSAGE AFTER 2 SECONDS (Safety Delay)
+        // STEP B: SEND MESSAGE AFTER 5 SECONDS
+        // (Increased delay to ensure Telegram syncs the user state)
         setTimeout(() => {
+            console.log(`⏳ Attempting to message ${name}...`);
             sendWelcome(userId, name);
-        }, 2000);
+        }, 5000);
     });
 
     function sendWelcome(chatId, firstName) {
@@ -184,19 +189,21 @@ You are now connected to our High-Frequency Network.
         };
 
         bot.sendMessage(chatId, welcomeMsg, opts)
-            .then(() => console.log(`✅ Welcome sent to ${firstName}`))
-            .catch((e) => console.log(`⚠️ Welcome Blocked for ${firstName} (User hasn't started bot)`));
+            .then(() => console.log(`✅ SUCCESS: Welcome message sent to ${firstName}`))
+            .catch((e) => {
+                console.log(`⚠️ FAILED to message ${firstName}.`);
+                console.log(`REASON: ${e.response ? e.response.body.description : e.message}`);
+                console.log(`NOTE: If error is 'Forbidden', the user has NOT started the bot yet.`);
+            });
     }
 }
 
 // --- SMART SIGNAL GENERATOR ---
 function generateSignal() {
-    // CORRECTED: XAU/USD-OTC is the broker standard for Gold
-    const pairs = ['EUR/USD-OTC', 'GBP/USD-OTC', 'GOLD-OTC', 'BTC/USD'];
+    const pairs = ['EUR/USD-OTC', 'GBP/USD-OTC', 'XAU/USD-OTC', 'BTC/USD'];
     const pair = pairs[Math.floor(Math.random() * pairs.length)];
     const rsi = Math.floor(Math.random() * 100);
 
-    // SMART EXPIRY MIX (Weighted)
     const expiries = ['M1', 'M1', 'M1', 'M1', 'M1', 'M1', 'M1', 'M2', 'M5', 'TURBO'];
     const expiry = expiries[Math.floor(Math.random() * expiries.length)];
 
@@ -206,11 +213,11 @@ function generateSignal() {
     if (decision === "HOLD") decision = Math.random() > 0.5 ? "CALL (BUY) ⬆" : "PUT (SELL) ⬇";
 
     let tierRequired = 1;
-    if(pair.includes('GOLD') || pair.includes('BTC')) tierRequired = 3;
+    if(pair.includes('XAU') || pair.includes('BTC')) tierRequired = 3;
     else if(pair.includes('GBP')) tierRequired = 2;
 
     return {
-        pair: pair === 'GOLD-OTC' ? 'XAU/USD-OTC' : pair, // Show correct broker name
+        pair,
         price: (1.0000 + Math.random()).toFixed(4),
         rsi,
         decision,
@@ -241,7 +248,7 @@ setInterval(async () => {
             oneSignalClient.createNotification({ contents: { 'en': `💸 ${signalData.pair} MONEY ALERT! \nAction: ${signalData.decision}` }, included_segments: ["Subscribed Users"] }).catch(e=>{});
             lastOneSignalTime = now;
         }
-        // Telegram Teaser
+        // Telegram Alert (Safe Mode: 30 mins)
         if (bot && now - lastTelegramTime > (30 * 60 * 1000)) {
             telegramUsers.forEach(chatId => {
                  bot.sendMessage(chatId, `🔥 **VIP BINARY SIGNAL**\nAsset: ${signalData.pair}\nDirection: HIDDEN 🔒`, { parse_mode: 'Markdown', reply_markup: { inline_keyboard: [[{ text: "💸 UNLOCK FOR PROFIT", url: CONFIG.SITE_URL }]] } }).catch(() => {});
