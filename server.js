@@ -4,7 +4,7 @@
  * 1. Secured Telegram Token (Via Render Vault)
  * 2. Automated Signal Generation
  * 3. Mobile Tiered Access ($25/$99/$500)
- * 4. Premium Bot Design (Agentic AI Robot)
+ * 4. Premium Bot Buttons (Inline Keyboard)
  * 5. Admin Live Broadcast
  */
 
@@ -30,9 +30,9 @@ const CONFIG = {
     // 3. IQ OPTION AFFILIATE ID
     AFFILIATE_ID: '228383', 
 
-    // 4. ONESIGNAL KEYS (Pulls from Render Vault)
-    ONESIGNAL_APP_ID: process.env.ONESIGNAL_APP_ID || '3552e19d-e987-49b0-8885-e09175dcc1c9',
-    ONESIGNAL_API_KEY: process.env.ONESIGNAL_API_KEY || 'os_v2_app_gvjodhpjq5e3bcef4cixlxgbzht3co5dv4bufevl76w72u55kguxefssmaigx6ytaen6gof4immfitjcb4ahwfsbqx2zjh7hesimvhy',
+    // 4. ONESIGNAL KEYS (Pulls from Render Vault - NO HARDCODED FALLBACKS)
+    ONESIGNAL_APP_ID: process.env.ONESIGNAL_APP_ID,
+    ONESIGNAL_API_KEY: process.env.ONESIGNAL_API_KEY,
 
     // 5. ADMIN PASSWORD (For "Go Live" link)
     ADMIN_SECRET: 'godspower123', 
@@ -62,7 +62,14 @@ try {
 }
 
 // Initialize OneSignal Client
-const oneSignalClient = new OneSignal.Client(CONFIG.ONESIGNAL_APP_ID, CONFIG.ONESIGNAL_API_KEY);
+// We check if keys exist first to prevent crashing
+let oneSignalClient;
+if (CONFIG.ONESIGNAL_APP_ID && CONFIG.ONESIGNAL_API_KEY) {
+    oneSignalClient = new OneSignal.Client(CONFIG.ONESIGNAL_APP_ID, CONFIG.ONESIGNAL_API_KEY);
+    console.log("✅ OneSignal Client Initialized");
+} else {
+    console.log("⚠️ OneSignal Keys missing in Render. Push notifications will not work.");
+}
 
 app.use(express.static('public'));
 app.use(bodyParser.json());
@@ -93,13 +100,12 @@ let clickIdMap = {};
 // ==========================================
 
 if (bot) {
-    // 1. Handle /start (PREMIUM WELCOME MESSAGE)
+    // 1. Handle /start (PREMIUM BUTTONS)
     bot.onText(/\/start/, (msg) => {
         const chatId = msg.chat.id;
         telegramUsers.add(chatId);
         saveUsers();
 
-        // The Beautiful Message with Bold Text and Emojis
         const welcomeMsg = `
 *🟢 AGENTIC AI ROBOT ONLINE*
 ━━━━━━━━━━━━━━━━━━
@@ -110,20 +116,24 @@ Welcome, trader. You have connected to the institutional-grade signal network.
 ● **Accuracy:** \`94.2%\`
 ● **Live Signals:** \`ONLINE\`
 
-👇 *SELECT YOUR ACTION:*
-
-💎 *1. ACCESS LIVE SIGNALS*
-Tap below to register and unlock the VIP Dashboard.
-[👉 OPEN SIGNAL TERMINAL](${CONFIG.SITE_URL})
-
-📚 *2. JOIN TRADING ACADEMY*
-Learn our strategy in the official channel.
-[👉 JOIN CHANNEL](${CONFIG.TELEGRAM_CHANNEL_LINK})
-
-_Wait for the "🔴 I AM LIVE" alert to watch the admin trade._
+👇 *TAP A BUTTON TO BEGIN:*
 `;
 
-        bot.sendMessage(chatId, welcomeMsg, { parse_mode: 'Markdown' });
+        const opts = {
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: "💎 OPEN SIGNAL TERMINAL", url: CONFIG.SITE_URL }
+                    ],
+                    [
+                        { text: "📚 JOIN TRADING ACADEMY", url: CONFIG.TELEGRAM_CHANNEL_LINK }
+                    ]
+                ]
+            }
+        };
+
+        bot.sendMessage(chatId, welcomeMsg, opts);
     });
 
     // 2. Handle /stop
@@ -141,21 +151,24 @@ _Wait for the "🔴 I AM LIVE" alert to watch the admin trade._
 // 📡 ADMIN ACTION: "I AM LIVE"
 // ==========================================
 app.get('/admin/go-live', (req, res) => {
-    // SECURITY CHECK: Matches the password in CONFIG above
-    if (req.query.secret !== CONFIG.ADMIN_SECRET) return res.send("❌ Access Denied: Wrong Password.");
-    if (!bot) return res.send("❌ Bot not active. Check Render Environment Variables.");
+    if (req.query.secret !== CONFIG.ADMIN_SECRET) return res.send("❌ Access Denied.");
+    if (!bot) return res.send("❌ Bot not active.");
 
-    const liveMsg = `🔴 **I AM LIVE NOW!**
-
-I am teaching how to use the signals and trading live.
-Don't miss this session!
-
-👇 **JOIN STREAM NOW:**
-${CONFIG.TELEGRAM_CHANNEL_LINK}`;
+    const liveMsg = `🔴 **I AM LIVE NOW!**\n\nI am teaching how to use the signals and trading live.\nDon't miss this session!`;
+    
+    // Button to join stream
+    const opts = {
+        parse_mode: 'Markdown',
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: "🔴 WATCH STREAM NOW", url: CONFIG.TELEGRAM_CHANNEL_LINK }]
+            ]
+        }
+    };
 
     let count = 0;
     telegramUsers.forEach(chatId => {
-        bot.sendMessage(chatId, liveMsg, { parse_mode: 'Markdown' }).catch(() => {});
+        bot.sendMessage(chatId, liveMsg, opts).catch(() => {});
         count++;
     });
 
@@ -173,6 +186,7 @@ app.get('/generate-link', (req, res) => {
     if(!websiteUsers[userId]) websiteUsers[userId] = { tier: 0 };
     clickIdMap[clickId] = userId;
     
+    // IQ Option Link
     const link = `https://iqoption.com/land/register?aff=${CONFIG.AFFILIATE_ID}&aff_sub=${clickId}`;
     res.json({ link: link });
 });
@@ -236,8 +250,8 @@ setInterval(async () => {
 
         io.emit('new_signal', signalData);
 
-        // OneSignal Push
-        if (tierRequired === 3) {
+        // OneSignal Push (Only works if keys are in Render)
+        if (tierRequired === 3 && oneSignalClient) {
             const now = Date.now();
             if (now - lastOneSignalTime > (60 * 60 * 1000)) { 
                 const notification = {
@@ -253,13 +267,21 @@ setInterval(async () => {
             }
         }
 
-        // Telegram Teaser
+        // Telegram Teaser WITH BUTTONS
         if (tierRequired === 3 && bot) {
             const now = Date.now();
             if (now - lastTelegramTime > (30 * 60 * 1000)) { 
-                const teaserMsg = `🔥 **VIP SIGNAL DETECTED** 🔥\n\nAsset: ${pair}\nDirection: HIDDEN 🔒\n\n👇 **Log in to the app to see the direction!**\n${CONFIG.SITE_URL}`;
+                const teaserMsg = `🔥 **VIP SIGNAL DETECTED** 🔥\n\nAsset: ${pair}\nDirection: HIDDEN 🔒\n`;
+                const teaserOpts = {
+                    parse_mode: 'Markdown',
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: "🔓 UNLOCK SIGNAL IN APP", url: CONFIG.SITE_URL }]
+                        ]
+                    }
+                };
                 telegramUsers.forEach(chatId => {
-                    bot.sendMessage(chatId, teaserMsg, { parse_mode: 'Markdown' }).catch(() => {});
+                    bot.sendMessage(chatId, teaserMsg, teaserOpts).catch(() => {});
                 });
                 lastTelegramTime = now;
                 console.log("✈ Telegram Teaser Sent");
