@@ -5,6 +5,7 @@
  * 2. Automated Signal Generation
  * 3. Mobile Tiered Access ($25/$99/$500)
  * 4. Premium Bot Design (Agentic AI Robot)
+ * 5. Admin Live Broadcast
  */
 
 const express = require('express');
@@ -20,8 +21,7 @@ const { v4: uuidv4 } = require('uuid');
 // 🔧 CONFIGURATION (SECURED)
 // ==========================================
 const CONFIG = {
-    // 1. TELEGRAM BOT (Now pulls from Render Vault for security)
-    // MAKE SURE YOU ADDED 'TELEGRAM_TOKEN' IN RENDER ENVIRONMENT VARIABLES!
+    // 1. TELEGRAM BOT (Pulls from Render Vault)
     TELEGRAM_TOKEN: process.env.TELEGRAM_TOKEN, 
     
     // 2. YOUR TELEGRAM CHANNEL LINK
@@ -34,7 +34,7 @@ const CONFIG = {
     ONESIGNAL_APP_ID: process.env.ONESIGNAL_APP_ID || '3552e19d-e987-49b0-8885-e09175dcc1c9',
     ONESIGNAL_API_KEY: process.env.ONESIGNAL_API_KEY || 'os_v2_app_gvjodhpjq5e3bcef4cixlxgbzht3co5dv4bufevl76w72u55kguxefssmaigx6ytaen6gof4immfitjcb4ahwfsbqx2zjh7hesimvhy',
 
-    // 5. ADMIN PASSWORD
+    // 5. ADMIN PASSWORD (For "Go Live" link)
     ADMIN_SECRET: 'godspower123', 
     
     // 6. YOUR WEBSITE URL
@@ -141,6 +141,7 @@ _Wait for the "🔴 I AM LIVE" alert to watch the admin trade._
 // 📡 ADMIN ACTION: "I AM LIVE"
 // ==========================================
 app.get('/admin/go-live', (req, res) => {
+    // SECURITY CHECK: Matches the password in CONFIG above
     if (req.query.secret !== CONFIG.ADMIN_SECRET) return res.send("❌ Access Denied: Wrong Password.");
     if (!bot) return res.send("❌ Bot not active. Check Render Environment Variables.");
 
@@ -186,10 +187,10 @@ app.get('/api/postback', (req, res) => {
         const userId = clickIdMap[clickId];
         let newTier = 0;
 
-        // --- MOBILE TIER LOGIC ---
-        if (amount >= 25 && amount < 99) newTier = 1;   // BASIC
-        if (amount >= 99 && amount < 500) newTier = 2;  // PRO
-        if (amount >= 500) newTier = 3;                 // VIP
+        // --- MOBILE PRICING LOGIC ---
+        if (amount >= 25 && amount < 99) newTier = 1;   // BASIC ($25-$99)
+        if (amount >= 99 && amount < 500) newTier = 2;  // PRO ($99-$500)
+        if (amount >= 500) newTier = 3;                 // VIP ($500+)
 
         if (newTier > 0) {
             websiteUsers[userId].tier = newTier;
