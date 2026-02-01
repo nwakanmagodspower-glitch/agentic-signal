@@ -1,6 +1,6 @@
 /**
  * GODSPOWER AGENTIC SIGNAL - FINAL COMPLETE SERVER
- * Includes: 3-Tier Logic, Signal History, Admin Broadcast, Database Persistence
+ * Includes: Smart Expiry, 3-Tier Logic, Signal History, Admin Broadcast
  */
 
 const express = require('express');
@@ -42,7 +42,7 @@ if (CONFIG.ONESIGNAL_APP_ID) oneSignalClient = new OneSignal.Client(CONFIG.ONESI
 app.use(express.static('public'));
 app.use(bodyParser.json());
 
-// --- DATABASE (Saves Users Forever) ---
+// --- DATABASE ---
 const TG_DB_FILE = 'telegram_users.json';
 const WEB_DB_FILE = 'website_users.json';
 let telegramUsers = new Set();
@@ -57,11 +57,10 @@ function saveWebUsers() { fs.writeFileSync(WEB_DB_FILE, JSON.stringify(websiteUs
 
 // --- SOCKET CONNECTION ---
 io.on('connection', (socket) => {
-    // Send history immediately so user sees signals instantly
     socket.emit('signal_history', signalHistory);
 });
 
-// --- ADMIN BROADCAST (The "Go Live" Fix) ---
+// --- ADMIN BROADCAST ---
 app.get('/admin/go-live', (req, res) => {
     if (req.query.secret !== CONFIG.ADMIN_SECRET) return res.send("❌ Access Denied.");
     if (!bot) return res.send("❌ Bot not active. Check Render Environment Variables.");
@@ -77,7 +76,7 @@ app.get('/admin/go-live', (req, res) => {
     res.send(`✅ Broadcast sent to ${count} users!`);
 });
 
-// --- AFFILIATE SYSTEM (3 Tiers) ---
+// --- AFFILIATE SYSTEM (3 TIERS) ---
 app.get('/generate-link', (req, res) => {
     const userId = req.query.userId;
     const clickId = uuidv4(); 
@@ -92,10 +91,9 @@ app.get('/api/postback', (req, res) => {
     if (clickId && clickIdMap[clickId]) {
         const userId = clickIdMap[clickId];
         let newTier = 0;
-        // Pricing Logic
-        if (amount >= 25 && amount < 100) newTier = 1; // Basic
-        if (amount >= 100 && amount < 500) newTier = 2; // Pro
-        if (amount >= 500) newTier = 3; // VIP
+        if (amount >= 25 && amount < 100) newTier = 1; 
+        if (amount >= 100 && amount < 500) newTier = 2; 
+        if (amount >= 500) newTier = 3; 
         
         if (newTier > 0) {
             websiteUsers[userId].tier = newTier;
@@ -106,7 +104,7 @@ app.get('/api/postback', (req, res) => {
     res.send("Postback Received");
 });
 
-// --- TELEGRAM BOT LOGIC ---
+// --- TELEGRAM BOT ---
 if (bot) {
     bot.onText(/\/start/, (msg) => {
         const chatId = msg.chat.id;
@@ -117,17 +115,20 @@ if (bot) {
     });
 }
 
-// --- SIGNAL GENERATOR ---
+// --- SMART SIGNAL GENERATOR ---
 function generateSignal() {
     const pairs = ['EUR/USD-OTC', 'GBP/USD-OTC', 'GOLD-OTC', 'BTC/USD'];
     const pair = pairs[Math.floor(Math.random() * pairs.length)];
     const rsi = Math.floor(Math.random() * 100);
     
+    // SMART EXPIRY: 70% chance M1, 30% chance M2/M5
+    const expiries = ['M1', 'M1', 'M1', 'M1', 'M1', 'M1', 'M1', 'M2', 'M5', 'TURBO'];
+    const expiry = expiries[Math.floor(Math.random() * expiries.length)];
+
     let decision = "HOLD";
     if (rsi > 80) decision = "PUT (SELL) ⬇";
     if (rsi < 20) decision = "CALL (BUY) ⬆";
 
-    // Ensure action
     if (decision === "HOLD") decision = Math.random() > 0.5 ? "CALL (BUY) ⬆" : "PUT (SELL) ⬇";
 
     let tierRequired = 1;
@@ -135,13 +136,18 @@ function generateSignal() {
     else if(pair.includes('GBP')) tierRequired = 2;
 
     const signalData = {
-        pair, price: (1.0000 + Math.random()).toFixed(4), rsi, decision, tierRequired,
+        pair, 
+        price: (1.0000 + Math.random()).toFixed(4), 
+        rsi, 
+        decision, 
+        expiry, 
+        tierRequired,
         timestamp: new Date().toLocaleTimeString()
     };
     return signalData;
 }
 
-// Pre-fill history so app is never empty on startup
+// Pre-fill history
 signalHistory.push(generateSignal());
 signalHistory.push(generateSignal());
 signalHistory.push(generateSignal());
@@ -158,7 +164,7 @@ setInterval(async () => {
 
     if (signalData.tierRequired === 3) {
         const now = Date.now();
-        // OneSignal Push
+        // OneSignal
         if (oneSignalClient && now - lastOneSignalTime > (45 * 60 * 1000)) {
             oneSignalClient.createNotification({
                 contents: { 'en': `💸 ${signalData.pair} MONEY ALERT! \nAction: ${signalData.decision}` },
@@ -166,7 +172,7 @@ setInterval(async () => {
             }).catch(e=>{});
             lastOneSignalTime = now;
         }
-        // Telegram Teaser
+        // Telegram
         if (bot && now - lastTelegramTime > (30 * 60 * 1000)) {
             telegramUsers.forEach(chatId => {
                  bot.sendMessage(chatId, `🔥 **VIP BINARY SIGNAL**\nAsset: ${signalData.pair}\nDirection: HIDDEN 🔒`, {
