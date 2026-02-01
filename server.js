@@ -2,7 +2,7 @@
  * GODSPOWER AGENTIC SIGNAL - FINAL AUTOMATED SERVER
  * Features:
  * 1. Automated Signal Generation (RSI/Bollinger)
- * 2. Tiered Access ($20/$99/$500) via IQ Option Postback
+ * 2. Tiered Access ($25/$99/$500) via IQ Option Postback
  * 3. Telegram Bot (Teasers & Live Alerts)
  * 4. OneSignal (Push Notifications for VIPs)
  */
@@ -21,7 +21,6 @@ const { v4: uuidv4 } = require('uuid');
 // ==========================================
 const CONFIG = {
     // 1. TELEGRAM BOT (7947848762:AAHbZhjPWguULgGAJjVu5FS59D7RT5o4P1A)
-    // You said you dropped it, but for security, paste it inside the quotes below:
     TELEGRAM_TOKEN: '7994329706', 
     
     // 2. YOUR TELEGRAM CHANNEL LINK
@@ -173,10 +172,11 @@ app.get('/api/postback', (req, res) => {
         const userId = clickIdMap[clickId];
         let newTier = 0;
 
-        // Tier Logic based on Deposit Amount
-        if (amount >= 20) newTier = 1;  // BASIC
-        if (amount >= 99) newTier = 2;  // PRO
-        if (amount >= 500) newTier = 3; // VIP
+        // --- UPDATED TIER LOGIC ---
+        if (amount >= 25 && amount < 99) newTier = 1;   // BASIC ($25-$99)
+        if (amount >= 99 && amount < 500) newTier = 2;  // PRO ($99-$500)
+        if (amount >= 500) newTier = 3;                 // VIP ($500+)
+        // --------------------------
 
         if (newTier > 0) {
             // Update User
