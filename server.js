@@ -3,7 +3,7 @@
  * Features:
  * 1. Secured Telegram Token (Via Render Vault)
  * 2. Automated Signal Generation
- * 3. Mobile Tiered Access ($25/$99/$500)
+ * 3. Mobile Tiered Access ($25 / $100 / $500)
  * 4. Premium Bot Buttons (Inline Keyboard)
  * 5. Admin Live Broadcast
  */
@@ -62,7 +62,6 @@ try {
 }
 
 // Initialize OneSignal Client
-// We check if keys exist first to prevent crashing
 let oneSignalClient;
 if (CONFIG.ONESIGNAL_APP_ID && CONFIG.ONESIGNAL_API_KEY) {
     oneSignalClient = new OneSignal.Client(CONFIG.ONESIGNAL_APP_ID, CONFIG.ONESIGNAL_API_KEY);
@@ -201,10 +200,10 @@ app.get('/api/postback', (req, res) => {
         const userId = clickIdMap[clickId];
         let newTier = 0;
 
-        // --- MOBILE PRICING LOGIC ---
-        if (amount >= 25 && amount < 99) newTier = 1;   // BASIC ($25-$99)
-        if (amount >= 99 && amount < 500) newTier = 2;  // PRO ($99-$500)
-        if (amount >= 500) newTier = 3;                 // VIP ($500+)
+        // --- MOBILE PRICING LOGIC (UPDATED) ---
+        if (amount >= 25 && amount < 100) newTier = 1;   // BASIC ($25 - $99)
+        if (amount >= 100 && amount < 500) newTier = 2;  // PRO ($100 - $499)
+        if (amount >= 500) newTier = 3;                  // VIP ($500+)
 
         if (newTier > 0) {
             websiteUsers[userId].tier = newTier;
@@ -250,7 +249,7 @@ setInterval(async () => {
 
         io.emit('new_signal', signalData);
 
-        // OneSignal Push (Only works if keys are in Render)
+        // OneSignal Push
         if (tierRequired === 3 && oneSignalClient) {
             const now = Date.now();
             if (now - lastOneSignalTime > (60 * 60 * 1000)) { 
