@@ -3,95 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AGENTIC AI // BINARY SIGNALS</title>
+    <title>AGENTIC AI // MARKET ANALYZER</title>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #00ff41; --glow: rgba(0, 255, 65, 0.5); --dark: #050505; --red: #ff003c; --panel: #111; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Rajdhani', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        
+        #lock-screen, #dashboard { width: 100%; max-width: 600px; padding: 15px; box-sizing: border-box; }
+        .glass-panel { background: rgba(10, 15, 10, 0.95); border: 1px solid var(--primary); padding: 20px; border-radius: 16px; text-align: center; }
+        h1 { font-family: 'Share Tech Mono'; color: #fff; text-shadow: 0 0 10px var(--primary); margin: 0; }
+        .video-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.2; z-index: -1; }
 
-        body {
-            margin: 0; background: #000; color: #fff; font-family: 'Rajdhani', sans-serif;
-            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
-            overflow-x: hidden; width: 100%; -webkit-tap-highlight-color: transparent;
+        /* ASSET GRID */
+        .asset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .asset-btn { 
+            background: #1a1a1a; border: 1px solid #333; padding: 20px 10px; border-radius: 12px; 
+            text-align: center; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden;
         }
+        .asset-btn:active { transform: scale(0.98); background: #222; }
+        .asset-btn h3 { margin: 0; font-family: 'Share Tech Mono'; font-size: 1.2rem; letter-spacing: 1px; }
+        .asset-btn small { color: #666; font-size: 0.75rem; text-transform: uppercase; }
+        
+        .asset-btn.vip { border: 1px solid var(--primary); background: rgba(0,255,65,0.05); }
+        .asset-btn.vip::after { content: "VIP"; position: absolute; top: 0; right: 0; background: var(--primary); color: #000; font-size: 0.6rem; padding: 2px 6px; font-weight: 800; border-bottom-left-radius: 6px; }
 
-        #lock-screen, #dashboard { width: 100%; max-width: 600px; box-sizing: border-box; padding: 15px; }
-        .glass-panel { width: 100%; background: rgba(10, 15, 10, 0.95); border: 1px solid rgba(0, 255, 65, 0.3); padding: 20px; border-radius: 16px; text-align: center; box-sizing: border-box; }
-        .video-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.3; filter: blur(5px); z-index: -1; }
-        h1 { font-family: 'Share Tech Mono'; font-size: 2rem; margin: 10px 0; color: #fff; text-shadow: 0 0 10px var(--primary); }
-
-        /* PRICING GRID (3 TIERS) */
-        .pricing-grid { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; }
-        .price-card { background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 12px 15px; border-radius: 8px; text-align: left; }
-        .price-card.vip { border: 1px solid var(--primary); background: rgba(0,255,65,0.05); }
-        .tier-name { font-family: 'Share Tech Mono'; color: #fff; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
-        .tier-price { color: var(--primary); font-weight: 800; }
-        .tier-benefits { font-size: 0.85rem; color: #ccc; margin-top: 5px; line-height: 1.4; }
-        .check { color: var(--primary); margin-right: 5px; font-weight: bold; }
-        .cross { color: var(--red); margin-right: 5px; font-weight: bold; opacity: 0.7; }
-
-        .btn-main { background: var(--primary); color: #000; padding: 15px; width: 100%; font-weight: 900; font-size: 1.2rem; border: none; border-radius: 8px; margin-top: 15px; cursor: pointer; animation: pulse 2s infinite; text-transform: uppercase; }
-
-        /* SIGNAL CARDS */
-        .signal-card { background: #141414; border: 1px solid #333; border-top: 3px solid #555; margin-bottom: 15px; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; }
-        .signal-card.call { border-top-color: var(--primary); }
-        .signal-card.put { border-top-color: var(--red); }
-        .sig-top { display: flex; justify-content: space-between; padding: 12px 15px; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Share Tech Mono'; font-size: 0.9rem; color: #ccc; }
-        .sig-body { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .direction-badge { font-size: 1.4rem; font-weight: 900; padding: 5px 12px; border-radius: 6px; display: flex; align-items: center; gap: 5px; }
-        .call .direction-badge { color: var(--primary); background: rgba(0,255,65,0.1); border: 1px solid rgba(0,255,65,0.2); }
-        .put .direction-badge { color: var(--red); background: rgba(255,0,60,0.1); border: 1px solid rgba(255,0,60,0.2); }
-        .sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 15px 15px 15px; }
-        .data-point { display: flex; flex-direction: column; }
-        .dp-label { font-size: 0.7rem; color: #666; }
-        .dp-val { font-family: 'Share Tech Mono'; font-size: 1rem; color: #fff; }
-        .btn-trade-area { padding: 0 15px 15px 15px; }
-        .btn-trade { width: 100%; padding: 12px; font-weight: 800; border: none; border-radius: 6px; cursor: pointer; text-transform: uppercase; font-size: 1rem; }
-        .call .btn-trade { background: var(--primary); color: #000; box-shadow: 0 0 15px rgba(0,255,65,0.2); }
-        .put .btn-trade { background: var(--red); color: #fff; box-shadow: 0 0 15px rgba(255,0,60,0.2); }
-        .blur-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(10,10,10,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; backdrop-filter: blur(5px); text-align: center; }
-        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; transform: scale(1.01); } 100% { opacity: 0.8; } }
+        /* SCANNING ANIMATION */
+        #scanner-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95);
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100;
+        }
+        .scan-circle {
+            width: 80px; height: 80px; border: 4px solid #333; border-top: 4px solid var(--primary);
+            border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* RESULT CARD */
+        #result-modal {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 85%; max-width: 380px; background: #0a0a0a; border: 1px solid var(--primary);
+            border-radius: 16px; padding: 25px; z-index: 200; box-shadow: 0 0 50px rgba(0,255,65,0.15);
+            text-align: center;
+        }
+        .result-pair { font-size: 1.2rem; color: #fff; font-weight: bold; margin-bottom: 5px; }
+        .result-val { font-family: 'Share Tech Mono'; font-size: 2.2rem; margin: 15px 0; font-weight: bold; text-shadow: 0 0 10px currentColor; }
+        .call { color: var(--primary); } .put { color: var(--red); }
+        
+        .btn-close { margin-top: 15px; background: #222; color: #888; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
+        
+        /* PRICING */
+        .pricing-grid { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
+        .price-card { background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 12px; border-radius: 8px; text-align: left; }
     </style>
-    <script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
-    <script> window.OneSignal = window.OneSignal || []; OneSignal.push(function() { OneSignal.init({ appId: "3552e19d-e987-49b0-8885-e09175dcc1c9", notifyButton: { enable: false } }); }); </script>
 </head>
 <body>
     <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnJ2ZmV3bnZ5cWJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eXJ6eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L1R1TVThqcebPqF8M/giphy.gif" class="video-bg">
 
     <div id="lock-screen">
         <div class="glass-panel">
-            <div><span style="color:var(--primary)">●</span> SYSTEM ONLINE</div>
-            <h1>AGENTIC AI</h1>
-            <div style="font-size:0.9rem; color:#aaa; margin-bottom:15px;">HIGH-FREQUENCY SIGNALS</div>
-
+            <h1>AGENTIC ANALYZER</h1>
+            <p style="color:#aaa; font-size:0.9rem; margin-bottom:20px;">AI-POWERED MARKET SCANNER</p>
+            
             <div class="pricing-grid">
                 <div class="price-card">
-                    <div class="tier-name">BASIC <span class="tier-price">$25 - $99</span></div>
-                    <div class="tier-benefits"><span class="check">✓</span> 85% Win Rate <br> <span class="cross">✗</span> No OTC Access</div>
+                    <b>BASIC ($25)</b><br>
+                    <small style="color:#888">EUR/USD & USD/JPY</small>
                 </div>
+                
                 <div class="price-card">
-                    <div class="tier-name">PRO <span class="tier-price">$100 - $499</span></div>
-                    <div class="tier-benefits"><span class="check">✓</span> <b>92% Win Rate</b> <br> <span class="check">✓</span> OTC & Turbo Mode</div>
+                    <b>PRO ($100)</b><br>
+                    <small style="color:#888">+ GBP/USD (High Volatility)</small>
                 </div>
-                <div class="price-card vip">
-                    <div class="tier-name">VIP <span class="tier-price">$500+</span></div>
-                    <div class="tier-benefits"><span class="check">✓</span> <b>98% AI ACCURACY</b> <br> <span class="check">✓</span> <b>ZERO LATENCY</b></div>
+                
+                <div class="price-card" style="border-color:var(--primary); background:rgba(0,255,65,0.05)">
+                    <b>VIP ($500)</b><br>
+                    <small style="color:#ccc">+ GOLD (XAU) & BITCOIN</small>
                 </div>
             </div>
 
-            <button class="btn-main" onclick="register()">⚡ DEPOSIT TO UNLOCK</button>
-            <button onclick="OneSignal.push(()=>OneSignal.showNativePrompt())" style="background:none; border:none; color:#aaa; margin-top:10px; font-size:0.8rem; cursor:pointer;">🔔 Enable Alerts</button>
+            <button onclick="register()" style="background:var(--primary); width:100%; padding:16px; font-weight:900; font-size:1.1rem; border:none; border-radius:8px; cursor:pointer; color:#000;">⚡ DEPOSIT TO UNLOCK</button>
         </div>
     </div>
 
     <div id="dashboard" style="display:none;">
-        <div style="background:#111; padding:15px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border:1px solid #333; box-shadow:0 5px 15px rgba(0,0,0,0.5);">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="width:8px; height:8px; background:red; border-radius:50%; animation:pulse 1s infinite;"></span>
-                <b>LIVE FEED</b>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:15px; border-bottom:1px solid #222;">
+            <div style="font-family:'Share Tech Mono'; display:flex; align-items:center; gap:8px;">
+                <div style="width:8px; height:8px; background:var(--primary); border-radius:50%; box-shadow:0 0 5px var(--primary);"></div>
+                SYSTEM ONLINE
             </div>
-            <span id="my-tier" style="background:#333; padding:4px 10px; font-size:0.8rem; border-radius:4px;">LOCKED</span>
+            <span id="user-badge" style="background:#222; color:#fff; padding:4px 10px; border-radius:4px; font-size:0.75rem; font-weight:bold;">LOADING...</span>
         </div>
-        <div id="feed"></div>
+
+        <h3 style="margin-top:25px; color:#888; font-size:0.8rem; letter-spacing:1px;">AVAILABLE MARKETS</h3>
+        
+        <div class="asset-grid">
+            <div class="asset-btn" onclick="analyze('EUR/USD-OTC')"><h3>EUR/USD</h3><small>OTC MARKET</small></div>
+            <div class="asset-btn" onclick="analyze('USD/JPY-OTC')"><h3>USD/JPY</h3><small>OTC MARKET</small></div>
+            <div class="asset-btn" onclick="analyze('GBP/USD-OTC')"><h3>GBP/USD</h3><small>HIGH VOLATILITY</small></div>
+            <div class="asset-btn vip" onclick="analyze('XAU/USD-OTC')"><h3>GOLD (XAU)</h3><small>VIP ONLY</small></div>
+            <div class="asset-btn vip" onclick="analyze('BTC/USD')"><h3>BITCOIN</h3><small>VIP ONLY</small></div>
+        </div>
+        
+        <div style="margin-top:30px; text-align:center;">
+             <button onclick="register()" style="background:none; border:1px solid #333; color:#666; padding:10px 20px; border-radius:20px; font-size:0.8rem; cursor:pointer;">⚡ Manage Account</button>
+        </div>
+    </div>
+
+    <div id="scanner-overlay">
+        <div class="scan-circle"></div>
+        <h2 style="font-family:'Share Tech Mono'; letter-spacing:2px;">SCANNING</h2>
+        <p id="scan-text" style="color:#666; font-size:0.9rem; margin-top:5px;">Connecting to Feed...</p>
+    </div>
+
+    <div id="result-modal">
+        <div id="result-content"></div>
+        <button class="btn-close" onclick="closeModal()">CLOSE SCAN</button>
+        <button onclick="register()" style="width:100%; margin-top:10px; padding:15px; background:var(--primary); border:none; border-radius:8px; font-weight:bold; font-size:1.1rem; color:#000;">⚡ PLACE TRADE</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -101,71 +128,85 @@
         localStorage.setItem('u_id', userId);
         let currentTier = 0;
 
-        // Admin Backdoor
-        if (new URLSearchParams(window.location.search).get('admin') === 'true') setTimeout(()=>updateTier(3, "ADMIN MODE"), 500);
-
-        // --- USER MEMORY CHECK ---
-        socket.on('connect', () => {
-            socket.emit('check_user_status', userId);
+        // Startup Check
+        socket.on('connect', () => socket.emit('check_user_status', userId));
+        
+        socket.on('account_unlocked', (data) => {
+            currentTier = data.tier;
+            document.getElementById('lock-screen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('user-badge').innerText = data.tier === 3 ? "VIP TRADER" : "PRO TRADER";
         });
+
+        // 1. User Clicks Asset
+        function analyze(asset) {
+            // Check Tier Locally first (Visual only)
+            if(asset.includes('XAU') && currentTier < 3) return alert("🔒 GOLD IS LOCKED. UPGRADE TO VIP.");
+            if(asset.includes('BTC') && currentTier < 3) return alert("🔒 BITCOIN IS LOCKED. UPGRADE TO VIP.");
+            
+            // Show Scanner
+            document.getElementById('scanner-overlay').style.display = 'flex';
+            const texts = ["Checking Volatility...", "Analyzing RSI...", "Predicting Trend...", "Finalizing Signal..."];
+            let i = 0;
+            const interval = setInterval(() => {
+                document.getElementById('scan-text').innerText = texts[i];
+                i = (i + 1) % texts.length;
+            }, 500);
+
+            // Send Request to Server
+            socket.emit('analyze_market', { userId, asset });
+
+            // Listen for Result
+            socket.once('analysis_result', (data) => {
+                clearInterval(interval);
+                setTimeout(() => {
+                    document.getElementById('scanner-overlay').style.display = 'none';
+                    showResult(data);
+                }, 500);
+            });
+        }
+
+        function showResult(data) {
+            if(data.tierRequired > currentTier) {
+                // Locked Result (Server Side Double Check)
+                document.getElementById('result-content').innerHTML = `
+                    <div style="font-size:3rem;">🔒</div>
+                    <h3>VIP SIGNAL LOCKED</h3>
+                    <p style="color:#888; font-size:0.9rem;">This asset requires VIP Access.</p>
+                `;
+            } else {
+                // Unlocked Result
+                const isCall = data.decision.includes('CALL');
+                const color = isCall ? '#00ff41' : '#ff003c';
+                document.getElementById('result-content').innerHTML = `
+                    <div class="result-pair">${data.pair}</div>
+                    <div style="color:#666; font-size:0.9rem; margin-bottom:10px;">EXPIRY: ${data.expiry}</div>
+                    
+                    <div class="result-val ${isCall ? 'call' : 'put'}" style="color:${color}">${data.decision}</div>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px; background:#111; padding:10px; border-radius:8px;">
+                        <div><small style="color:#666">ENTRY</small><br><b style="color:#fff">${data.price}</b></div>
+                        <div><small style="color:#666">STRENGTH</small><br><b style="color:#fff">${data.rsi}%</b></div>
+                    </div>
+                `;
+            }
+            document.getElementById('result-modal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('result-modal').style.display = 'none';
+        }
 
         async function register() {
             try { window.open((await (await fetch(`/generate-link?userId=${userId}`)).json()).link, '_blank'); } catch(e){}
         }
-
-        socket.on('account_unlocked', (data) => updateTier(data.tier, data.message));
-
-        function updateTier(tier, msg) {
-            currentTier = tier;
+        
+        // Admin Backdoor
+        if(new URLSearchParams(window.location.search).get('admin') === 'true') {
+            currentTier = 3;
             document.getElementById('lock-screen').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
-
-            const badge = document.getElementById('my-tier');
-            if(tier === 3) badge.innerText = "VIP TRADER";
-            else if(tier === 2) badge.innerText = "PRO TRADER";
-            else badge.innerText = "BASIC";
-
-            alert("🚀 " + msg);
         }
-
-        function renderSignal(data) {
-            const feed = document.getElementById('feed');
-            const div = document.createElement('div');
-            const isCall = data.decision.includes('CALL') || data.decision.includes('Buy');
-            const isLocked = data.tierRequired > currentTier;
-
-            div.className = `signal-card ${isCall ? 'call' : 'put'}`;
-            div.innerHTML = `
-                ${isLocked ? `
-                <div class="blur-overlay">
-                    <div style="font-size:2rem;">🔒</div>
-                    <h3>VIP SIGNAL</h3>
-                    <small style="color:#aaa; font-family:'Share Tech Mono'">98% Accuracy Hidden</small>
-                    <button onclick="register()" style="background:#00ff41; border:none; padding:10px 20px; font-weight:bold; margin-top:10px; border-radius:4px;">DEPOSIT $500</button>
-                </div>` : ''}
-
-                <div class="sig-top"><span>${data.pair}</span><span>${data.timestamp}</span></div>
-
-                <div class="sig-body">
-                    <div class="direction-badge">${isCall ? 'CALL ↗' : 'PUT ↘'}</div>
-                    <div style="text-align:right"><span class="dp-label">AI CONF</span><br><b>${data.tierRequired === 3 ? '98.5%' : '92%'}</b></div>
-                </div>
-
-                <div class="sig-grid">
-                    <div class="data-point"><span class="dp-label">STRIKE</span><span class="dp-val">${data.price}</span></div>
-                    <div class="data-point" style="align-items:flex-end"><span class="dp-label">EXPIRY</span><span class="dp-val">${data.expiry}</span></div>
-                </div>
-
-                ${!isLocked ? `<div class="btn-trade-area"><button class="btn-trade" onclick="register()">⚡ PLACE TRADE</button></div>` : ''}
-            `;
-            feed.prepend(div);
-            if(feed.children.length > 10) feed.lastChild.remove();
-        }
-
-        socket.on('new_signal', (data) => renderSignal(data));
-        socket.on('signal_history', (history) => {
-            history.slice().reverse().forEach(data => renderSignal(data));
-        });
     </script>
 </body>
 </html>
