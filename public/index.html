@@ -10,9 +10,15 @@
         body { margin: 0; background: #000; color: #fff; font-family: 'Rajdhani', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
         
         #lock-screen, #dashboard { width: 100%; max-width: 600px; padding: 15px; box-sizing: border-box; }
-        .glass-panel { background: rgba(10, 15, 10, 0.95); border: 1px solid var(--primary); padding: 20px; border-radius: 16px; text-align: center; }
-        h1 { font-family: 'Share Tech Mono'; color: #fff; text-shadow: 0 0 10px var(--primary); margin: 0; }
+        .glass-panel { background: rgba(10, 15, 10, 0.95); border: 1px solid var(--primary); padding: 25px 20px; border-radius: 16px; text-align: center; }
+        h1 { font-family: 'Share Tech Mono'; color: #fff; text-shadow: 0 0 10px var(--primary); margin: 0; font-size: 1.8rem; }
         .video-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.2; z-index: -1; }
+
+        /* INSTRUCTION STEPS */
+        .steps-box { text-align: left; margin: 20px 0; background: #1a1a1a; padding: 15px; border-radius: 8px; border-left: 3px solid var(--primary); }
+        .step { font-size: 0.9rem; color: #ccc; margin-bottom: 8px; display: flex; gap: 10px; }
+        .step b { color: #fff; }
+        .step-num { color: var(--primary); font-family: 'Share Tech Mono'; font-weight: bold; }
 
         /* ASSET GRID */
         .asset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
@@ -52,8 +58,10 @@
         .btn-close { margin-top: 15px; background: #222; color: #888; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
         
         /* PRICING */
-        .pricing-grid { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
-        .price-card { background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 12px; border-radius: 8px; text-align: left; }
+        .pricing-grid { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; }
+        .price-card { background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 10px 15px; border-radius: 8px; text-align: left; display:flex; justify-content:space-between; align-items:center;}
+        .price-info { text-align: left; }
+        .req-deposit { color: var(--primary); font-family: 'Share Tech Mono'; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -62,26 +70,40 @@
     <div id="lock-screen">
         <div class="glass-panel">
             <h1>AGENTIC ANALYZER</h1>
-            <p style="color:#aaa; font-size:0.9rem; margin-bottom:20px;">AI-POWERED MARKET SCANNER</p>
+            <p style="color:#aaa; font-size:0.85rem; margin-top:5px;">AI TRADING ASSISTANT</p>
             
+            <div class="steps-box">
+                <div style="font-size:0.8rem; color:#888; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;">How to Unlock:</div>
+                <div class="step"><span class="step-num">01.</span> <span>Register on <b>Partner Broker</b></span></div>
+                <div class="step"><span class="step-num">02.</span> <span>Deposit into <b>YOUR</b> Account</span></div>
+                <div class="step"><span class="step-num">03.</span> <span>App Unlocks Automatically</span></div>
+            </div>
+
             <div class="pricing-grid">
                 <div class="price-card">
-                    <b>BASIC ($25)</b><br>
-                    <small style="color:#888">EUR/USD & USD/JPY</small>
+                    <div class="price-info">
+                        <b>BASIC</b><br><small style="color:#888">EUR/USD & USD/JPY</small>
+                    </div>
+                    <div class="req-deposit">$25 DEP</div>
                 </div>
                 
                 <div class="price-card">
-                    <b>PRO ($100)</b><br>
-                    <small style="color:#888">+ GBP/USD (High Volatility)</small>
+                    <div class="price-info">
+                        <b>PRO</b><br><small style="color:#888">+ GBP (High Vol)</small>
+                    </div>
+                    <div class="req-deposit">$100 DEP</div>
                 </div>
                 
-                <div class="price-card" style="border-color:var(--primary); background:rgba(0,255,65,0.05)">
-                    <b>VIP ($500)</b><br>
-                    <small style="color:#ccc">+ GOLD (XAU) & BITCOIN</small>
+                <div class="price-card" style="border:1px solid var(--primary); background:rgba(0,255,65,0.05)">
+                    <div class="price-info">
+                        <b>VIP</b><br><small style="color:#ccc">+ XAU/USD & BTC</small>
+                    </div>
+                    <div class="req-deposit">$500 DEP</div>
                 </div>
             </div>
 
-            <button onclick="register()" style="background:var(--primary); width:100%; padding:16px; font-weight:900; font-size:1.1rem; border:none; border-radius:8px; cursor:pointer; color:#000;">⚡ DEPOSIT TO UNLOCK</button>
+            <button onclick="register()" style="background:var(--primary); width:100%; padding:16px; font-weight:900; font-size:1.1rem; border:none; border-radius:8px; cursor:pointer; color:#000; text-transform:uppercase;">Connect Broker Account</button>
+            <div style="margin-top:10px; font-size:0.7rem; color:#666;">Funds remain in your trading account.</div>
         </div>
     </div>
 
